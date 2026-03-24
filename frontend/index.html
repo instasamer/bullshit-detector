@@ -1,0 +1,890 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BS Detector - Powered by GenLayer</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #07070c;
+            color: #e0e0e0;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Aurora orbs */
+        body::before, body::after {
+            content: '';
+            position: fixed;
+            pointer-events: none;
+            z-index: 0;
+            border-radius: 50%;
+        }
+
+        body::before {
+            top: -15%; left: -8%;
+            width: 500px; height: 500px;
+            background: radial-gradient(circle, rgba(123, 104, 238, 0.12) 0%, transparent 70%);
+            animation: orb1 20s ease-in-out infinite alternate;
+        }
+
+        body::after {
+            bottom: -15%; right: -8%;
+            width: 450px; height: 450px;
+            background: radial-gradient(circle, rgba(255, 68, 68, 0.07) 0%, transparent 70%);
+            animation: orb2 25s ease-in-out infinite alternate;
+        }
+
+        @keyframes orb1 { 0% { transform: translate(0,0); } 100% { transform: translate(60px,40px); } }
+        @keyframes orb2 { 0% { transform: translate(0,0); } 100% { transform: translate(-40px,-60px); } }
+
+        .noise {
+            position: fixed; inset: 0; z-index: 9999; pointer-events: none; opacity: 0.025;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence baseFrequency='0.7' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+            mix-blend-mode: overlay;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 32px 20px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .glass {
+            background: rgba(12, 12, 20, 0.65);
+            backdrop-filter: blur(20px) saturate(140%);
+            -webkit-backdrop-filter: blur(20px) saturate(140%);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 16px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+        }
+
+        /* ===== HEADER ===== */
+        .header {
+            display: flex; align-items: center; justify-content: center;
+            gap: 14px; margin-bottom: 32px; padding-top: 8px;
+        }
+
+        .logo svg { filter: drop-shadow(0 0 12px rgba(255, 68, 68, 0.4)); }
+
+        .brand h1 {
+            font-size: 1.7rem; font-weight: 900; letter-spacing: -0.5px;
+            background: linear-gradient(135deg, #ff4444 0%, #ff8800 50%, #ffaa00 100%);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+            line-height: 1.1;
+        }
+
+        .brand .tagline {
+            font-size: 0.72rem; color: #555; font-weight: 500;
+            letter-spacing: 1px; text-transform: uppercase; margin-top: 2px;
+        }
+
+        .brand .tagline a { color: #7b68ee; text-decoration: none; }
+
+        /* ===== INPUT ===== */
+        .input-card { padding: 24px; margin-bottom: 20px; }
+
+        .input-card label {
+            display: block; font-size: 0.78rem; color: #666; margin-bottom: 8px;
+            font-weight: 600; text-transform: uppercase; letter-spacing: 1px;
+        }
+
+        .url-row { display: flex; gap: 10px; }
+
+        .url-row input {
+            flex: 1; background: rgba(7, 7, 12, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 12px;
+            padding: 14px 16px; color: #e0e0e0; font-size: 0.95rem; font-family: inherit;
+            transition: border-color 0.3s, box-shadow 0.3s;
+        }
+
+        .url-row input:focus { outline: none; border-color: rgba(123, 104, 238, 0.5); box-shadow: 0 0 20px rgba(123, 104, 238, 0.1); }
+
+        .detect-btn {
+            padding: 14px 28px; background: linear-gradient(135deg, #7b68ee, #5b4bc9);
+            color: white; border: none; border-radius: 12px; font-weight: 700; font-size: 0.9rem;
+            cursor: pointer; transition: all 0.2s; white-space: nowrap;
+        }
+
+        .detect-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 24px rgba(123, 104, 238, 0.35); }
+        .detect-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+        .input-hint { font-size: 0.75rem; color: #444; margin-top: 8px; }
+
+        /* Fallback paste */
+        .fallback { display: none; padding: 20px; margin-bottom: 16px; }
+        .fallback.active { display: block; }
+        .fallback .note { padding: 10px 14px; background: rgba(123,104,238,0.06); border: 1px solid rgba(123,104,238,0.15); border-radius: 8px; font-size: 0.8rem; color: #888; margin-bottom: 12px; }
+        .fallback .note strong { color: #7b68ee; }
+        .fallback textarea { width: 100%; min-height: 80px; background: rgba(7,7,12,0.8); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; padding: 12px; color: #e0e0e0; font-size: 0.9rem; font-family: inherit; resize: vertical; }
+        .fallback textarea:focus { outline: none; border-color: rgba(123,104,238,0.5); }
+        .fallback-btn { width: 100%; margin-top: 10px; padding: 12px; background: linear-gradient(135deg, #7b68ee, #5b4bc9); color: white; border: none; border-radius: 10px; font-weight: 700; cursor: pointer; }
+
+        /* ===== TWEET STAGE ===== */
+        /* This is the main area: starts as full-width preview, then splits into two panels */
+        .tweet-stage {
+            display: none;
+            margin-bottom: 20px;
+        }
+
+        .tweet-stage.active { display: block; }
+
+        /* Full-width preview (before analysis) */
+        .tweet-full {
+            transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+            overflow: hidden;
+        }
+
+        .tweet-full .embed-wrap {
+            padding: 16px;
+        }
+
+        .tweet-full .embed-loading {
+            text-align: center; padding: 30px; color: #444; font-size: 0.85rem;
+        }
+
+        /* Split view (during/after analysis) */
+        .tweet-split {
+            display: none;
+            grid-template-columns: 1fr 1fr;
+            gap: 2px;
+            border-radius: 16px;
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+        }
+
+        .tweet-split.active {
+            display: grid;
+            animation: fadeSlide 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        @keyframes fadeSlide {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .split-left, .split-right {
+            padding: 4px;
+            min-height: 200px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .split-left {
+            background: rgba(12, 12, 20, 0.7);
+        }
+
+        .split-right {
+            background: rgba(12, 12, 20, 0.85);
+            position: relative;
+        }
+
+        .split-label {
+            position: absolute; top: 10px; left: 14px; z-index: 5;
+            font-size: 0.6rem; text-transform: uppercase; letter-spacing: 2px;
+            font-weight: 700; padding: 4px 10px; border-radius: 6px;
+            backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+        }
+
+        .split-left .split-label {
+            color: #888; background: rgba(0,0,0,0.4);
+        }
+
+        .split-right .split-label {
+            color: #7b68ee; background: rgba(0,0,0,0.5);
+        }
+
+        .split-right .split-label.BULLSHIT { color: #ff3333; }
+        .split-right .split-label.LEGIT { color: #33ff66; }
+        .split-right .split-label.INCONCLUSIVE { color: #ffc800; }
+
+        /* Grayed out tweet on right */
+        .split-right .embed-gray {
+            filter: grayscale(100%) brightness(0.4);
+            pointer-events: none;
+            padding: 4px;
+        }
+
+        /* Loading overlay on right panel */
+        .analyzing-overlay {
+            position: absolute; inset: 0; z-index: 10;
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            background: rgba(7, 7, 12, 0.6);
+            backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+            transition: opacity 0.4s;
+        }
+
+        .analyzing-overlay.hidden { opacity: 0; pointer-events: none; }
+
+        .mini-spinner {
+            width: 36px; height: 36px;
+            border: 3px solid rgba(123,104,238,0.15);
+            border-top-color: #7b68ee;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin-bottom: 12px;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .analyzing-overlay .a-text {
+            font-size: 0.8rem; color: #7b68ee; font-weight: 600;
+        }
+
+        .analyzing-overlay .a-sub {
+            font-size: 0.7rem; color: #555; margin-top: 4px;
+        }
+
+        /* Stamp overlay on right panel */
+        .stamp-overlay {
+            position: absolute; inset: 0; z-index: 15;
+            display: none; flex-direction: column; align-items: center; justify-content: center;
+            pointer-events: none;
+        }
+
+        .stamp-overlay.active {
+            display: flex;
+        }
+
+        /* "Why?" pill under stamp */
+        .why-pill {
+            margin-top: 12px;
+            padding: 6px 20px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            letter-spacing: 1px;
+            cursor: pointer;
+            pointer-events: auto;
+            transition: all 0.2s;
+            animation: fadeIn 0.4s ease 0.5s both;
+        }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+
+        .why-pill.BULLSHIT {
+            color: #ff3333;
+            background: rgba(255, 30, 30, 0.15);
+            border: 1px solid rgba(255, 50, 50, 0.4);
+        }
+        .why-pill.LEGIT {
+            color: #33ff66;
+            background: rgba(30, 255, 80, 0.12);
+            border: 1px solid rgba(50, 255, 80, 0.35);
+        }
+        .why-pill.INCONCLUSIVE {
+            color: #ffc800;
+            background: rgba(255, 200, 0, 0.12);
+            border: 1px solid rgba(255, 200, 0, 0.35);
+        }
+
+        .why-pill:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+        }
+
+        .stamp {
+            display: flex; flex-direction: column; align-items: center; gap: 4px;
+            padding: 16px 24px; border: 4px solid; border-radius: 14px;
+            transform: rotate(-12deg);
+            animation: stampSlam 0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+        }
+
+        @keyframes stampSlam {
+            0% { transform: rotate(-12deg) scale(3); opacity: 0; }
+            50% { transform: rotate(-12deg) scale(0.92); opacity: 1; }
+            70% { transform: rotate(-12deg) scale(1.04); }
+            100% { transform: rotate(-12deg) scale(1); }
+        }
+
+        @keyframes shake {
+            0%,100% { transform: translate(0); }
+            15% { transform: translate(-3px,-2px); }
+            30% { transform: translate(3px,1px); }
+            45% { transform: translate(-2px,2px); }
+            60% { transform: translate(2px,-1px); }
+        }
+
+        .stamp.BULLSHIT { border-color: #ff3333; background: rgba(255,30,30,0.18); box-shadow: 0 0 40px rgba(255,50,50,0.3); }
+        .stamp.LEGIT { border-color: #33ff66; background: rgba(30,255,80,0.15); box-shadow: 0 0 40px rgba(50,255,80,0.25); }
+        .stamp.INCONCLUSIVE { border-color: #ffc800; background: rgba(255,200,0,0.15); box-shadow: 0 0 40px rgba(255,200,0,0.25); }
+
+        .stamp-icon { width: 44px; height: 44px; }
+        .stamp-icon svg { width: 100%; height: 100%; }
+
+        @keyframes drawLine { from { stroke-dashoffset: 150; } to { stroke-dashoffset: 0; } }
+
+        .s-cross line { stroke: #ff3333; stroke-width: 12; stroke-linecap: round; stroke-dasharray: 150; animation: drawLine 0.4s ease forwards; filter: drop-shadow(0 0 10px rgba(255,50,50,0.8)); }
+        .s-cross line:nth-child(2) { animation-delay: 0.15s; stroke-dashoffset: 150; }
+        .s-tick polyline { stroke: #33ff66; stroke-width: 12; stroke-linecap: round; stroke-linejoin: round; fill: none; stroke-dasharray: 150; animation: drawLine 0.5s ease forwards; filter: drop-shadow(0 0 10px rgba(50,255,80,0.8)); }
+        .s-q text { fill: #ffc800; font-size: 60px; font-weight: 900; font-family: 'Inter', sans-serif; filter: drop-shadow(0 0 10px rgba(255,200,0,0.8)); }
+
+        .stamp-text { font-size: 1.1rem; font-weight: 900; letter-spacing: 3px; text-transform: uppercase; }
+        .stamp.BULLSHIT .stamp-text { color: #ff3333; position: relative; }
+        .stamp.LEGIT .stamp-text { color: #33ff66; }
+        .stamp.INCONCLUSIVE .stamp-text { color: #ffc800; }
+
+        /* Glitch */
+        .stamp.BULLSHIT .stamp-text::before, .stamp.BULLSHIT .stamp-text::after {
+            content: attr(data-text); position: absolute; top: 0; left: 0; width: 100%; opacity: 0.7;
+        }
+        .stamp.BULLSHIT .stamp-text::before { color: #ff00ff; z-index: -1; animation: g1 3s infinite linear alternate-reverse; }
+        .stamp.BULLSHIT .stamp-text::after { color: #ff8800; z-index: -2; animation: g2 2s infinite linear alternate-reverse; }
+
+        @keyframes g1 { 0%,90%,100% { transform: translate(0); clip-path: inset(0); } 92% { transform: translate(-2px,1px); clip-path: inset(20% 0 40% 0); } 94% { transform: translate(2px,0); clip-path: inset(50% 0 20% 0); } }
+        @keyframes g2 { 0%,85%,100% { transform: translate(0); } 88% { transform: translate(1px,-1px); } 91% { transform: translate(-1px,1px); } }
+
+        /* ===== VERDICT SUMMARY ===== */
+        .verdict-bar {
+            display: none; text-align: center; padding: 20px;
+            margin-top: 2px; border-radius: 0 0 16px 16px;
+        }
+
+        .verdict-bar.active { display: block; animation: fadeSlide 0.4s ease; }
+
+        .verdict-bar.BULLSHIT { background: rgba(255,30,30,0.04); border: 1px solid rgba(255,50,50,0.1); border-top: none; }
+        .verdict-bar.LEGIT { background: rgba(30,255,80,0.03); border: 1px solid rgba(50,255,80,0.1); border-top: none; }
+        .verdict-bar.INCONCLUSIVE { background: rgba(255,200,0,0.03); border: 1px solid rgba(255,200,0,0.1); border-top: none; }
+
+        .verdict-bar .big { font-size: 1.5rem; font-weight: 900; letter-spacing: 3px; }
+        .verdict-bar.BULLSHIT .big { color: #ff3333; }
+        .verdict-bar.LEGIT .big { color: #33ff66; }
+        .verdict-bar.INCONCLUSIVE .big { color: #ffc800; }
+
+        .verdict-bar .desc { font-size: 0.8rem; color: #555; margin-top: 4px; }
+
+        .conf-row { display: flex; align-items: center; justify-content: center; gap: 10px; margin-top: 10px; }
+        .conf-lbl { font-size: 0.7rem; color: #555; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; }
+        .conf-track { width: 150px; height: 5px; background: rgba(255,255,255,0.06); border-radius: 3px; overflow: hidden; }
+        .conf-fill { height: 100%; border-radius: 3px; transition: width 1s cubic-bezier(0.22,1,0.36,1); box-shadow: 0 0 8px currentColor; }
+        .conf-val { font-size: 0.8rem; font-weight: 700; }
+
+        .cached-tag { display: none; margin-top: 8px; padding: 4px 12px; font-size: 0.68rem; color: #7b68ee; background: rgba(123,104,238,0.1); border: 1px solid rgba(123,104,238,0.2); border-radius: 20px; font-weight: 600; }
+        .cached-tag.active { display: inline-block; }
+
+        /* ===== REASONING ===== */
+        .reasoning { display: none; margin-top: 12px; border-radius: 14px; overflow: hidden; }
+        .reasoning.active { display: block; animation: fadeSlide 0.4s ease; }
+
+        .r-toggle {
+            display: flex; align-items: center; gap: 10px; padding: 14px 18px;
+            cursor: pointer; user-select: none; transition: background 0.2s;
+            background: rgba(123,104,238,0.04);
+        }
+        .r-toggle:hover { background: rgba(123,104,238,0.08); }
+        .r-toggle .ri { width: 20px; height: 20px; flex-shrink: 0; }
+        .r-toggle .ri svg { width: 100%; height: 100%; }
+        .r-toggle .rt { font-size: 0.78rem; font-weight: 700; color: #7b68ee; text-transform: uppercase; letter-spacing: 1px; }
+        .r-toggle .chev { margin-left: auto; transition: transform 0.3s; }
+        .r-toggle .chev svg { width: 16px; height: 16px; }
+
+        .r-body { max-height: 0; overflow: hidden; transition: max-height 0.4s ease, padding 0.4s ease; padding: 0 18px; }
+        .r-body.open { max-height: 600px; padding: 16px 18px 20px; }
+
+        .r-quote { font-size: 0.95rem; line-height: 1.7; color: #ddd; padding: 14px 16px; background: rgba(123,104,238,0.05); border-left: 3px solid #7b68ee; border-radius: 0 10px 10px 0; margin-bottom: 16px; }
+
+        .r-sec { margin-bottom: 14px; }
+        .r-sec:last-child { margin-bottom: 0; }
+        .r-sec h4 { font-size: 0.7rem; color: #555; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 6px; font-weight: 700; }
+        .r-sec p { color: #aaa; font-size: 0.88rem; line-height: 1.6; }
+
+        .red-flags { list-style: none; padding: 0; }
+        .red-flags li { padding: 8px 12px; background: rgba(255,50,50,0.05); border-left: 3px solid #ff3333; margin-bottom: 5px; border-radius: 0 8px 8px 0; font-size: 0.85rem; color: #ddd; }
+
+        /* ===== SEAL ===== */
+        .seal {
+            display: none; align-items: center; justify-content: center; gap: 8px;
+            margin-top: 12px; padding: 12px 18px;
+            background: rgba(123,104,238,0.04); border: 1px solid rgba(123,104,238,0.12); border-radius: 12px;
+        }
+        .seal.active { display: flex; animation: fadeSlide 0.4s ease; }
+        .seal svg { width: 24px; height: 24px; flex-shrink: 0; }
+        .seal .st { font-size: 0.75rem; font-weight: 700; color: #7b68ee; }
+        .seal .ss { font-size: 0.65rem; color: #555; }
+
+        /* ===== ERROR ===== */
+        .error { display: none; padding: 14px 18px; background: rgba(255,50,50,0.08); border: 1px solid rgba(255,50,50,0.2); border-radius: 12px; color: #ff6666; font-size: 0.88rem; margin-top: 12px; }
+        .error.active { display: block; }
+
+        /* ===== EXAMPLES ===== */
+        .examples { margin-top: 32px; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.04); }
+        .examples h3 { font-size: 0.7rem; color: #444; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 10px; font-weight: 700; }
+        .ex { padding: 12px 16px; margin-bottom: 6px; border-radius: 10px; cursor: pointer; transition: all 0.2s; font-size: 0.85rem; color: #777; background: rgba(12,12,20,0.4); border: 1px solid rgba(255,255,255,0.04); }
+        .ex:hover { border-color: rgba(123,104,238,0.3); color: #bbb; background: rgba(123,104,238,0.04); }
+
+        @media (max-width: 640px) {
+            .tweet-split { grid-template-columns: 1fr; }
+            .header { flex-direction: column; gap: 8px; }
+            .brand h1 { font-size: 1.4rem; text-align: center; }
+            .url-row { flex-direction: column; }
+        }
+    </style>
+</head>
+<body>
+    <div class="noise"></div>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <div class="logo">
+                <svg viewBox="0 0 64 64" width="44" height="44">
+                    <circle cx="26" cy="26" r="18" fill="none" stroke="url(#lg)" stroke-width="3"/>
+                    <line x1="39" y1="39" x2="56" y2="56" stroke="url(#lg)" stroke-width="4" stroke-linecap="round"/>
+                    <line x1="26" y1="15" x2="26" y2="30" stroke="#ff4444" stroke-width="3.5" stroke-linecap="round"/>
+                    <circle cx="26" cy="35" r="2" fill="#ff4444"/>
+                    <defs><linearGradient id="lg" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#ff4444"/><stop offset="100%" stop-color="#ff8800"/></linearGradient></defs>
+                </svg>
+            </div>
+            <div class="brand">
+                <h1>BS Detector</h1>
+                <div class="tagline">Verified by <a href="https://genlayer.com" target="_blank">GenLayer</a></div>
+            </div>
+        </div>
+
+        <!-- Hero / Explanation -->
+        <div class="hero glass" style="padding: 28px 24px; margin-bottom: 20px; text-align: center;">
+            <p style="font-size: 1rem; color: #ccc; line-height: 1.7; max-width: 580px; margin: 0 auto;">
+                Social media is full of misleading claims, fake gurus, and hype.
+                <strong style="color: #fff;">BS Detector</strong> uses
+                <a href="https://genlayer.com" target="_blank" style="color: #7b68ee; text-decoration: none; font-weight: 600;">GenLayer's</a>
+                decentralized AI to fact-check posts &mdash; not one model, but
+                <strong style="color: #fff;">multiple independent AI validators</strong>
+                that must reach consensus on whether a claim is legit or bullshit.
+            </p>
+            <div style="display: flex; justify-content: center; gap: 24px; margin-top: 16px; flex-wrap: wrap;">
+                <div style="display: flex; align-items: center; gap: 6px;">
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none"><circle cx="12" cy="12" r="10" stroke="#7b68ee" stroke-width="1.5"/><path d="M8 12l3 3 5-5" stroke="#7b68ee" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    <span style="font-size: 0.75rem; color: #888;">Multi-validator consensus</span>
+                </div>
+                <div style="display: flex; align-items: center; gap: 6px;">
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none"><rect x="3" y="3" width="18" height="18" rx="4" stroke="#7b68ee" stroke-width="1.5"/><path d="M8 12h8M12 8v8" stroke="#7b68ee" stroke-width="1.5" stroke-linecap="round"/></svg>
+                    <span style="font-size: 0.75rem; color: #888;">On-chain verifiable</span>
+                </div>
+                <div style="display: flex; align-items: center; gap: 6px;">
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none"><circle cx="12" cy="12" r="10" stroke="#7b68ee" stroke-width="1.5"/><path d="M12 7v5l3 3" stroke="#7b68ee" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    <span style="font-size: 0.75rem; color: #888;">No single point of failure</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Input -->
+        <div class="input-card glass">
+            <label>Post URL</label>
+            <div class="url-row">
+                <input type="text" id="post-url" placeholder="https://x.com/user/status/..." onkeydown="if(event.key==='Enter')loadPost()">
+                <button class="detect-btn" id="main-btn" onclick="loadPost()">Detect</button>
+            </div>
+            <div class="input-hint">Paste a tweet URL &mdash; we'll extract and analyze it automatically</div>
+        </div>
+
+        <!-- Fallback paste -->
+        <div class="fallback glass" id="fallback">
+            <div class="note"><strong>Couldn't extract text automatically.</strong> Paste the post content below.</div>
+            <textarea id="claim-text" placeholder="Paste the post text here..."></textarea>
+            <button class="fallback-btn" onclick="verify()">Detect Bullshit</button>
+        </div>
+
+        <!-- Tweet stage: full preview OR split view -->
+        <div class="tweet-stage" id="stage">
+            <!-- Full-width embed (shown after load, before analysis) -->
+            <div class="tweet-full glass" id="tweet-full">
+                <div class="embed-wrap" id="embed-wrap"></div>
+            </div>
+
+            <!-- Split view (shown during/after analysis) -->
+            <div class="tweet-split" id="tweet-split">
+                <!-- Left: original tweet -->
+                <div class="split-left">
+                    <div class="split-label">Original</div>
+                    <div id="split-left-embed"></div>
+                </div>
+                <!-- Right: grayed tweet + overlays -->
+                <div class="split-right" id="split-right">
+                    <div class="split-label" id="right-label">Analyzing</div>
+                    <div class="embed-gray" id="split-right-embed"></div>
+                    <!-- Analyzing spinner overlay -->
+                    <div class="analyzing-overlay" id="analyzing-overlay">
+                        <div class="mini-spinner"></div>
+                        <div class="a-text" id="a-step">Submitting to GenLayer...</div>
+                        <div class="a-sub">Multiple AI validators analyzing</div>
+                    </div>
+                    <!-- Stamp overlay (hidden until verdict) -->
+                    <div class="stamp-overlay" id="stamp-overlay">
+                        <div class="stamp" id="stamp">
+                            <div class="stamp-icon" id="stamp-icon"></div>
+                            <div class="stamp-text" id="stamp-label"></div>
+                        </div>
+                        <div class="why-pill" id="why-pill" onclick="scrollToReasoning()">Why? &darr;</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Verdict bar (below split) -->
+        <div class="verdict-bar" id="verdict-bar">
+            <div class="big" id="big-verdict"></div>
+            <div class="desc" id="verdict-desc"></div>
+            <div class="conf-row">
+                <span class="conf-lbl">Confidence</span>
+                <div class="conf-track"><div class="conf-fill" id="conf-fill"></div></div>
+                <span class="conf-val" id="conf-val"></span>
+            </div>
+            <div class="cached-tag" id="cached-tag">Previously verified</div>
+            <div class="cached-tag" id="consensus-note" style="color:#ffc800;background:rgba(255,200,0,0.1);border-color:rgba(255,200,0,0.2);"></div>
+        </div>
+
+        <!-- Reasoning -->
+        <div class="reasoning glass" id="reasoning">
+            <div class="r-toggle" onclick="toggleR()">
+                <div class="ri"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="#7b68ee" stroke-width="2" fill="rgba(123,104,238,0.1)"/><path d="M8 12l3 3 5-5" stroke="#7b68ee" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+                <span class="rt">GenLayer's Reasoning</span>
+                <div class="chev" id="chev"><svg viewBox="0 0 24 24" fill="none"><path d="M6 9l6 6 6-6" stroke="#7b68ee" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+            </div>
+            <div class="r-body" id="r-body">
+                <div class="r-quote" id="reason-text"></div>
+                <div class="r-sec" id="flags-sec"><h4>Red Flags Detected</h4><ul class="red-flags" id="flags-list"></ul></div>
+                <div class="r-sec"><h4>Evidence Summary</h4><p id="evidence-text"></p></div>
+            </div>
+        </div>
+
+        <!-- Seal -->
+        <div class="seal" id="seal">
+            <svg viewBox="0 0 40 40" fill="none"><circle cx="20" cy="20" r="17" stroke="#7b68ee" stroke-width="2" fill="rgba(123,104,238,0.08)"/><path d="M13 20.5l4.5 4.5 9-9" stroke="#7b68ee" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
+            <div><div class="st">Verified by GenLayer</div><div class="ss">Decentralized AI consensus</div></div>
+        </div>
+
+        <!-- Error -->
+        <div class="error" id="error"></div>
+
+    </div>
+
+    <script async src="https://platform.twitter.com/widgets.js"></script>
+    <script>
+        const API = window.location.origin;
+        let currentUrl = '', currentText = '', embedHtml = '';
+
+        const examples = [
+            "I made $100,000 in just 2 weeks using this AI trading bot. It literally prints money. DM me for the link, only 10 spots left!",
+            "Breaking: NASA confirms water ice deposits found in permanently shadowed craters on the Moon's south pole",
+            "This new crypto token went up 50,000% in 24 hours and it's still early! The dev doxxed himself and liquidity is locked. Easy 100x from here",
+        ];
+
+        function extractText(html) {
+            const d = document.createElement('div');
+            d.innerHTML = html;
+            const bq = d.querySelector('blockquote');
+            if (!bq) return '';
+            return Array.from(bq.querySelectorAll('p')).map(p => p.textContent.trim()).filter(Boolean).join('\n');
+        }
+
+        /**
+         * Extract t.co links from oEmbed HTML that point to other tweets (quoted tweets).
+         */
+        function extractTcoLinks(html) {
+            const d = document.createElement('div');
+            d.innerHTML = html;
+            const links = d.querySelectorAll('a[href*="t.co"]');
+            return Array.from(links)
+                .map(a => a.href)
+                .filter(h => h.includes('t.co') && !h.includes('pic.twitter.com'));
+        }
+
+        /**
+         * Resolve a t.co link to see if it points to another tweet.
+         * Uses our backend proxy to avoid CORS issues.
+         */
+        async function resolveTcoLink(tcoUrl) {
+            try {
+                // Use the oEmbed endpoint trick: if the resolved URL is a tweet, oEmbed will work
+                // First, try common tweet URL patterns by resolving via a HEAD request proxy
+                // Since we can't do cross-origin HEAD, we try oEmbed directly with the t.co URL
+                // Twitter oEmbed will follow the redirect internally
+                const resp = await fetch(`https://publish.twitter.com/oembed?url=${encodeURIComponent(tcoUrl)}&omit_script=true`);
+                if (resp.ok) {
+                    const data = await resp.json();
+                    return { isQuoteTweet: true, html: data.html, author: data.author_name, text: extractText(data.html) };
+                }
+            } catch (e) {}
+            return { isQuoteTweet: false };
+        }
+
+        /**
+         * Full extraction: get main tweet text + quoted tweet text + thread detection.
+         */
+        async function fullExtract(mainHtml, mainUrl) {
+            let mainText = extractText(mainHtml);
+            let quotedText = '';
+            let quotedAuthor = '';
+            let quotedHtml = '';
+
+            // Check for quoted tweets via t.co links
+            const tcoLinks = extractTcoLinks(mainHtml);
+            for (const link of tcoLinks) {
+                const resolved = await resolveTcoLink(link);
+                if (resolved.isQuoteTweet && resolved.text) {
+                    quotedText = resolved.text;
+                    quotedAuthor = resolved.author || '';
+                    quotedHtml = resolved.html || '';
+                    break; // Take first quoted tweet
+                }
+            }
+
+            // Build combined text for analysis
+            let combinedText = mainText;
+            if (quotedText) {
+                combinedText = `[Main post]: ${mainText}\n\n[Quoted post${quotedAuthor ? ' by @' + quotedAuthor : ''}]: ${quotedText}`;
+            }
+
+            return { mainText, quotedText, quotedAuthor, quotedHtml, combinedText };
+        }
+
+        function renderEmbed(container, html) {
+            container.innerHTML = html;
+            if (window.twttr?.widgets) window.twttr.widgets.load(container);
+        }
+
+        function show(id) { document.getElementById(id).classList.add('active'); }
+        function hide(id) { document.getElementById(id).classList.remove('active'); }
+
+        function resetResult() {
+            hide('verdict-bar'); hide('reasoning'); hide('seal'); hide('error');
+            document.getElementById('stamp-overlay').classList.remove('active');
+            document.getElementById('analyzing-overlay').classList.remove('hidden');
+            document.getElementById('tweet-split').classList.remove('active');
+            document.getElementById('tweet-full').style.display = '';
+        }
+
+        async function loadPost() {
+            const url = document.getElementById('post-url').value.trim();
+            if (!url) return;
+            currentUrl = url;
+
+            resetResult();
+            hide('fallback');
+            show('stage');
+
+            const wrap = document.getElementById('embed-wrap');
+            wrap.innerHTML = '<div class="embed-loading">Loading tweet...</div>';
+            document.getElementById('tweet-full').style.display = '';
+            document.getElementById('tweet-split').classList.remove('active');
+
+            if (url.includes('x.com') || url.includes('twitter.com')) {
+                try {
+                    const resp = await fetch(`https://publish.twitter.com/oembed?url=${encodeURIComponent(url)}&theme=dark&omit_script=true`);
+                    const data = await resp.json();
+                    embedHtml = data.html || '';
+                    renderEmbed(wrap, embedHtml);
+
+                    // Full extraction: main text + quoted tweets
+                    wrap.innerHTML = embedHtml + '<div class="embed-loading" style="padding:8px 16px;">Checking for quoted tweets...</div>';
+                    renderEmbed(wrap, wrap.innerHTML);
+
+                    const extracted = await fullExtract(embedHtml, url);
+
+                    // Show clean embed
+                    renderEmbed(wrap, embedHtml);
+
+                    if (extracted.combinedText) {
+                        currentText = extracted.combinedText;
+                        document.getElementById('claim-text').value = currentText;
+
+                        // If there's a quoted tweet, show it in the embed too
+                        if (extracted.quotedHtml) {
+                            embedHtml = embedHtml + '<div style="padding:4px 16px 12px;border-top:1px solid rgba(255,255,255,0.06);"><div style="font-size:0.65rem;color:#555;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;font-weight:600;">Quoted post</div>' + extracted.quotedHtml + '</div>';
+                            renderEmbed(wrap, embedHtml);
+                        }
+
+                        startAnalysis();
+                    } else {
+                        show('fallback');
+                    }
+                } catch (e) {
+                    wrap.innerHTML = '<div class="embed-loading" style="color:#555;">Could not load preview</div>';
+                    show('fallback');
+                }
+            } else {
+                wrap.innerHTML = '<div class="embed-loading" style="color:#555;">Non-Twitter URL</div>';
+                show('fallback');
+            }
+        }
+
+        function loadExample(i) {
+            currentUrl = '';
+            currentText = examples[i];
+            document.getElementById('claim-text').value = examples[i];
+            document.getElementById('post-url').value = '';
+
+            resetResult();
+            hide('fallback');
+            show('stage');
+
+            embedHtml = `<div style="padding:16px;color:#ccc;font-size:0.92rem;line-height:1.7;">&ldquo;${examples[i]}&rdquo;<div style="color:#444;font-size:0.75rem;margin-top:8px;">Example post</div></div>`;
+            document.getElementById('embed-wrap').innerHTML = embedHtml;
+            document.getElementById('tweet-full').style.display = '';
+            document.getElementById('tweet-split').classList.remove('active');
+
+            startAnalysis();
+        }
+
+        function startAnalysis() {
+            // Hide full preview, show split view
+            document.getElementById('tweet-full').style.display = 'none';
+
+            // Populate both sides of split
+            const leftEmbed = document.getElementById('split-left-embed');
+            const rightEmbed = document.getElementById('split-right-embed');
+            leftEmbed.innerHTML = embedHtml;
+            rightEmbed.innerHTML = embedHtml;
+
+            if (window.twttr?.widgets) {
+                window.twttr.widgets.load(leftEmbed);
+                window.twttr.widgets.load(rightEmbed);
+            }
+
+            // Show split with analyzing overlay
+            document.getElementById('analyzing-overlay').classList.remove('hidden');
+            document.getElementById('stamp-overlay').classList.remove('active');
+            document.getElementById('right-label').className = 'split-label';
+            document.getElementById('right-label').textContent = 'Analyzing...';
+
+            const split = document.getElementById('tweet-split');
+            split.classList.add('active');
+
+            // Start verification
+            verify();
+        }
+
+        async function verify() {
+            const text = currentText || document.getElementById('claim-text').value.trim();
+            if (!text) { show('fallback'); return; }
+            currentText = text;
+
+            hide('error'); hide('verdict-bar'); hide('reasoning'); hide('seal');
+            document.getElementById('main-btn').disabled = true;
+
+            const steps = ['Submitting to GenLayer...', 'Lead validator analyzing...', 'Checking for red flags...', 'Co-validators verifying...', 'Reaching consensus...'];
+            let si = 0;
+            const iv = setInterval(() => {
+                si = Math.min(si + 1, steps.length - 1);
+                const el = document.getElementById('a-step');
+                if (el) el.textContent = steps[si];
+            }, 5000);
+
+            try {
+                const r = await fetch(`${API}/api/verify/text`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ claim_text: text, source_url: currentUrl }),
+                });
+                clearInterval(iv);
+                if (!r.ok) { const e = await r.json().catch(() => ({})); throw new Error(e.detail || `Error ${r.status}`); }
+                showResult(await r.json());
+            } catch (e) {
+                clearInterval(iv);
+                document.getElementById('error').textContent = e.message;
+                show('error');
+            } finally {
+                document.getElementById('main-btn').disabled = false;
+            }
+        }
+
+        function showResult(data) {
+            const v = (data.verdict || 'INCONCLUSIVE').toUpperCase();
+            const conf = data.confidence || 50;
+            const colors = { BULLSHIT: '#ff3333', LEGIT: '#33ff66', INCONCLUSIVE: '#ffc800' };
+
+            // Hide analyzing overlay, show stamp
+            document.getElementById('analyzing-overlay').classList.add('hidden');
+
+            // Update right label
+            const rl = document.getElementById('right-label');
+            rl.textContent = v === 'LEGIT' ? 'Not Bullshit' : v;
+            rl.className = `split-label ${v}`;
+
+            // Stamp
+            const stamp = document.getElementById('stamp');
+            stamp.className = `stamp ${v}`;
+
+            const icon = document.getElementById('stamp-icon');
+            if (v === 'BULLSHIT') icon.innerHTML = `<svg viewBox="0 0 80 80" class="s-cross"><line x1="15" y1="15" x2="65" y2="65"/><line x1="65" y1="15" x2="15" y2="65"/></svg>`;
+            else if (v === 'LEGIT') icon.innerHTML = `<svg viewBox="0 0 80 80" class="s-tick"><polyline points="12,42 32,60 68,20"/></svg>`;
+            else icon.innerHTML = `<svg viewBox="0 0 80 80" class="s-q"><text x="50%" y="55%" dominant-baseline="central" text-anchor="middle">?</text></svg>`;
+
+            const label = document.getElementById('stamp-label');
+            label.textContent = v === 'LEGIT' ? 'LEGIT' : v;
+            label.setAttribute('data-text', label.textContent);
+
+            document.getElementById('stamp-overlay').classList.add('active');
+            document.getElementById('why-pill').className = `why-pill ${v}`;
+
+            // Shake the split
+            const split = document.getElementById('tweet-split');
+            split.style.animation = 'none';
+            split.offsetHeight; // reflow
+            split.style.animation = 'shake 0.35s ease-out';
+
+            // Verdict bar
+            const vb = document.getElementById('verdict-bar');
+            vb.className = `verdict-bar active ${v}`;
+            document.getElementById('big-verdict').textContent = v === 'BULLSHIT' ? 'BULLSHIT' : v === 'LEGIT' ? 'NOT BULLSHIT' : 'INCONCLUSIVE';
+            document.getElementById('verdict-desc').textContent = v === 'BULLSHIT' ? 'This claim is likely false or misleading' : v === 'LEGIT' ? 'This claim appears to be legitimate' : 'Not enough evidence to determine';
+
+            const fill = document.getElementById('conf-fill');
+            fill.style.width = '0%';
+            setTimeout(() => { fill.style.width = conf + '%'; fill.style.background = colors[v]; fill.style.color = colors[v]; }, 50);
+            document.getElementById('conf-val').textContent = conf + '%';
+            document.getElementById('conf-val').style.color = colors[v];
+
+            document.getElementById('cached-tag').classList.toggle('active', !!data.cached);
+
+            // Show consensus note if partial result
+            const noteEl = document.getElementById('consensus-note');
+            if (data.consensus_note) {
+                noteEl.textContent = data.consensus_note;
+                noteEl.classList.add('active');
+            } else {
+                noteEl.classList.remove('active');
+            }
+
+            // Reasoning
+            document.getElementById('reason-text').textContent = data.reason || '';
+            document.getElementById('evidence-text').textContent = data.evidence_summary || '';
+            const fl = document.getElementById('flags-list');
+            const fs = document.getElementById('flags-sec');
+            fl.innerHTML = '';
+            if (data.red_flags?.length) { fs.style.display = 'block'; data.red_flags.forEach(f => { const li = document.createElement('li'); li.textContent = f; fl.appendChild(li); }); }
+            else { fs.style.display = 'none'; }
+            document.getElementById('r-body').classList.remove('open');
+            document.getElementById('chev').style.transform = '';
+
+            show('reasoning'); show('seal');
+            document.getElementById('verdict-bar').scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+
+        function scrollToReasoning() {
+            // Open reasoning if closed
+            const b = document.getElementById('r-body');
+            const c = document.getElementById('chev');
+            if (!b.classList.contains('open')) {
+                b.classList.add('open');
+                c.style.transform = 'rotate(180deg)';
+            }
+            // Scroll to it
+            document.getElementById('reasoning').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        function toggleR() {
+            const b = document.getElementById('r-body');
+            const c = document.getElementById('chev');
+            const open = b.classList.toggle('open');
+            c.style.transform = open ? 'rotate(180deg)' : '';
+        }
+    </script>
+</body>
+</html>

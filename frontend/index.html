@@ -415,15 +415,56 @@
 
         /* ===== EXAMPLES ===== */
         .examples { margin-top: 32px; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.04); }
-        .examples h3 { font-size: 0.7rem; color: #444; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 10px; font-weight: 700; }
-        .ex { padding: 12px 16px; margin-bottom: 6px; border-radius: 10px; cursor: pointer; transition: all 0.2s; font-size: 0.85rem; color: #777; background: rgba(12,12,20,0.4); border: 1px solid rgba(255,255,255,0.04); }
-        .ex:hover { border-color: rgba(123,104,238,0.3); color: #bbb; background: rgba(123,104,238,0.04); }
+        .examples h3 { font-size: 0.7rem; color: #444; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 14px; font-weight: 700; }
+
+        .ex-card {
+            display: grid; grid-template-columns: 1fr auto;
+            align-items: center; gap: 12px;
+            padding: 0; margin-bottom: 10px; border-radius: 14px;
+            cursor: pointer; transition: all 0.25s;
+            background: rgba(12,12,20,0.5);
+            border: 1px solid rgba(255,255,255,0.04);
+            overflow: hidden;
+        }
+        .ex-card:hover { border-color: rgba(123,104,238,0.3); background: rgba(123,104,238,0.03); transform: translateY(-1px); box-shadow: 0 4px 20px rgba(0,0,0,0.3); }
+
+        .ex-card .ex-embed {
+            padding: 4px; overflow: hidden; max-height: 180px;
+            font-size: 0.8rem; pointer-events: none;
+        }
+        .ex-card .ex-embed twitter-widget,
+        .ex-card .ex-embed .twitter-tweet { transform: scale(0.85); transform-origin: top left; }
+
+        .ex-card .ex-verdict {
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            gap: 6px; padding: 16px 24px; min-width: 110px;
+            border-left: 1px solid rgba(255,255,255,0.04);
+            background: rgba(0,0,0,0.2);
+        }
+
+        .ex-card .ex-verdict .ex-icon { width: 32px; height: 32px; }
+        .ex-card .ex-verdict .ex-icon svg { width: 100%; height: 100%; }
+
+        .ex-card .ex-verdict .ex-label {
+            font-size: 0.65rem; font-weight: 900; letter-spacing: 2px; text-transform: uppercase;
+        }
+
+        .ex-card .ex-verdict.BULLSHIT { border-left-color: rgba(255,50,50,0.15); }
+        .ex-card .ex-verdict.BULLSHIT .ex-label { color: #ff3333; }
+        .ex-card .ex-verdict.LEGIT { border-left-color: rgba(50,255,80,0.15); }
+        .ex-card .ex-verdict.LEGIT .ex-label { color: #33ff66; }
+        .ex-card .ex-verdict.INCONCLUSIVE { border-left-color: rgba(255,200,0,0.15); }
+        .ex-card .ex-verdict.INCONCLUSIVE .ex-label { color: #ffc800; }
+
+        .ex-card .ex-loading { padding: 20px; color: #333; font-size: 0.75rem; }
 
         @media (max-width: 640px) {
             .tweet-split { grid-template-columns: 1fr; }
             .header { flex-direction: column; gap: 8px; }
             .brand h1 { font-size: 1.4rem; text-align: center; }
             .url-row { flex-direction: column; }
+            .ex-card { grid-template-columns: 1fr; }
+            .ex-card .ex-verdict { border-left: none; border-top: 1px solid rgba(255,255,255,0.04); padding: 12px; flex-direction: row; }
         }
     </style>
 </head>
@@ -565,17 +606,26 @@
         <!-- Examples -->
         <div class="examples">
             <h3>Try a real post</h3>
-            <div class="ex" onclick="loadExampleUrl(0)">
-                <span style="color:#ff3333;font-weight:700;font-size:0.7rem;letter-spacing:1px;">LIKELY BS</span>
-                <span style="margin-left:8px;">@BDCryptoGuru &mdash; "ERIC TRUMP JUST ORDERED A MEGA YACHT WORTH $500M AFTER SELLING $WLFI"</span>
+            <div class="ex-card" onclick="loadExampleUrl(0)">
+                <div class="ex-embed" id="ex-embed-0"><div class="ex-loading">Loading tweet...</div></div>
+                <div class="ex-verdict BULLSHIT">
+                    <div class="ex-icon"><svg viewBox="0 0 80 80"><line x1="18" y1="18" x2="62" y2="62" stroke="#ff3333" stroke-width="10" stroke-linecap="round"/><line x1="62" y1="18" x2="18" y2="62" stroke="#ff3333" stroke-width="10" stroke-linecap="round"/></svg></div>
+                    <div class="ex-label">Bullshit</div>
+                </div>
             </div>
-            <div class="ex" onclick="loadExampleUrl(1)">
-                <span style="color:#33ff66;font-weight:700;font-size:0.7rem;letter-spacing:1px;">LIKELY LEGIT</span>
-                <span style="margin-left:8px;">@NASA &mdash; Artemis II mission update: four astronauts to journey around the Moon</span>
+            <div class="ex-card" onclick="loadExampleUrl(1)">
+                <div class="ex-embed" id="ex-embed-1"><div class="ex-loading">Loading tweet...</div></div>
+                <div class="ex-verdict LEGIT">
+                    <div class="ex-icon"><svg viewBox="0 0 80 80"><polyline points="14,44 32,60 66,22" stroke="#33ff66" stroke-width="10" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></div>
+                    <div class="ex-label">Legit</div>
+                </div>
             </div>
-            <div class="ex" onclick="loadExampleUrl(2)">
-                <span style="color:#ffc800;font-weight:700;font-size:0.7rem;letter-spacing:1px;">DEBATABLE</span>
-                <span style="margin-left:8px;">@elonmusk &mdash; "Non-existent people or identities of dead people are being used" to collect government paychecks</span>
+            <div class="ex-card" onclick="loadExampleUrl(2)">
+                <div class="ex-embed" id="ex-embed-2"><div class="ex-loading">Loading tweet...</div></div>
+                <div class="ex-verdict INCONCLUSIVE">
+                    <div class="ex-icon"><svg viewBox="0 0 80 80"><text x="50%" y="55%" dominant-baseline="central" text-anchor="middle" fill="#ffc800" font-size="56" font-weight="900" font-family="Inter,sans-serif">?</text></svg></div>
+                    <div class="ex-label">Inconclusive</div>
+                </div>
             </div>
         </div>
 
@@ -591,6 +641,36 @@
             "https://x.com/NASA/status/2028957500897206315",
             "https://x.com/elonmusk/status/1893657900851278115",
         ];
+
+        // Load example tweet embeds on page load
+        async function loadExampleEmbeds() {
+            for (let i = 0; i < exampleUrls.length; i++) {
+                try {
+                    const resp = await fetch(`https://publish.twitter.com/oembed?url=${encodeURIComponent(exampleUrls[i])}&theme=dark&omit_script=true&maxwidth=400`);
+                    const data = await resp.json();
+                    const el = document.getElementById(`ex-embed-${i}`);
+                    if (el && data.html) {
+                        el.innerHTML = data.html;
+                        if (window.twttr?.widgets) window.twttr.widgets.load(el);
+                    }
+                } catch (e) {
+                    const el = document.getElementById(`ex-embed-${i}`);
+                    if (el) el.innerHTML = `<div class="ex-loading" style="color:#555;">Could not load preview</div>`;
+                }
+            }
+        }
+
+        // Init examples after Twitter widgets.js loads
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', () => setTimeout(loadExampleEmbeds, 500));
+        } else {
+            setTimeout(loadExampleEmbeds, 500);
+        }
+
+        function loadExampleUrl(i) {
+            document.getElementById('post-url').value = exampleUrls[i];
+            loadPost();
+        }
 
         function extractText(html) {
             const d = document.createElement('div');

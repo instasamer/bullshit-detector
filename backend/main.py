@@ -15,7 +15,10 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
-from genlayer_service import GenLayerService
+try:
+    from backend.genlayer_service import GenLayerService
+except ImportError:
+    from genlayer_service import GenLayerService
 
 logging.basicConfig(
     level=logging.INFO,

@@ -417,54 +417,60 @@
         .examples { margin-top: 32px; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.04); }
         .examples h3 { font-size: 0.7rem; color: #444; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 14px; font-weight: 700; }
 
+        .ex-grid {
+            display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;
+        }
+
         .ex-card {
-            display: grid; grid-template-columns: 1fr auto;
-            align-items: center; gap: 12px;
-            padding: 0; margin-bottom: 10px; border-radius: 14px;
+            position: relative;
+            display: flex; flex-direction: column;
+            border-radius: 14px;
             cursor: pointer; transition: all 0.25s;
             background: rgba(12,12,20,0.5);
             border: 1px solid rgba(255,255,255,0.04);
             overflow: hidden;
         }
-        .ex-card:hover { border-color: rgba(123,104,238,0.3); background: rgba(123,104,238,0.03); transform: translateY(-1px); box-shadow: 0 4px 20px rgba(0,0,0,0.3); }
+        .ex-card:hover { border-color: rgba(123,104,238,0.3); background: rgba(123,104,238,0.03); transform: translateY(-2px); box-shadow: 0 4px 20px rgba(0,0,0,0.3); }
 
-        .ex-card .ex-embed {
-            padding: 4px; overflow: hidden; max-height: 180px;
-            font-size: 0.8rem; pointer-events: none;
+        .ex-card .ex-click-overlay {
+            position: absolute; inset: 0; z-index: 10; cursor: pointer;
         }
-        .ex-card .ex-embed twitter-widget,
-        .ex-card .ex-embed .twitter-tweet { transform: scale(0.85); transform-origin: top left; }
+        .ex-card .ex-embed {
+            flex: 1; overflow: hidden; max-height: 300px; pointer-events: none;
+        }
+        .ex-card .ex-embed iframe,
+        .ex-card .ex-embed .twitter-tweet-rendered,
+        .ex-card .ex-embed twitter-widget {
+            width: 100% !important; max-width: 100% !important; min-width: 0 !important;
+        }
 
         .ex-card .ex-verdict {
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            gap: 6px; padding: 16px 24px; min-width: 110px;
-            border-left: 1px solid rgba(255,255,255,0.04);
+            display: flex; align-items: center; justify-content: center;
+            gap: 8px; padding: 10px;
+            border-top: 1px solid rgba(255,255,255,0.04);
             background: rgba(0,0,0,0.2);
         }
 
-        .ex-card .ex-verdict .ex-icon { width: 32px; height: 32px; }
+        .ex-card .ex-verdict .ex-icon { width: 24px; height: 24px; flex-shrink: 0; }
         .ex-card .ex-verdict .ex-icon svg { width: 100%; height: 100%; }
 
         .ex-card .ex-verdict .ex-label {
-            font-size: 0.65rem; font-weight: 900; letter-spacing: 2px; text-transform: uppercase;
+            font-size: 0.6rem; font-weight: 900; letter-spacing: 2px; text-transform: uppercase;
         }
 
-        .ex-card .ex-verdict.BULLSHIT { border-left-color: rgba(255,50,50,0.15); }
+        .ex-card .ex-verdict.BULLSHIT { border-top-color: rgba(255,50,50,0.15); }
         .ex-card .ex-verdict.BULLSHIT .ex-label { color: #ff3333; }
-        .ex-card .ex-verdict.LEGIT { border-left-color: rgba(50,255,80,0.15); }
+        .ex-card .ex-verdict.LEGIT { border-top-color: rgba(50,255,80,0.15); }
         .ex-card .ex-verdict.LEGIT .ex-label { color: #33ff66; }
-        .ex-card .ex-verdict.INCONCLUSIVE { border-left-color: rgba(255,200,0,0.15); }
+        .ex-card .ex-verdict.INCONCLUSIVE { border-top-color: rgba(255,200,0,0.15); }
         .ex-card .ex-verdict.INCONCLUSIVE .ex-label { color: #ffc800; }
-
-        .ex-card .ex-loading { padding: 20px; color: #333; font-size: 0.75rem; }
 
         @media (max-width: 640px) {
             .tweet-split { grid-template-columns: 1fr; }
             .header { flex-direction: column; gap: 8px; }
             .brand h1 { font-size: 1.4rem; text-align: center; }
             .url-row { flex-direction: column; }
-            .ex-card { grid-template-columns: 1fr; }
-            .ex-card .ex-verdict { border-left: none; border-top: 1px solid rgba(255,255,255,0.04); padding: 12px; flex-direction: row; }
+            .ex-grid { grid-template-columns: 1fr; }
         }
     </style>
 </head>
@@ -606,25 +612,30 @@
         <!-- Examples -->
         <div class="examples">
             <h3>Try a real post</h3>
-            <div class="ex-card" onclick="loadExampleUrl(0)">
-                <div class="ex-embed" id="ex-embed-0"><div class="ex-loading">Loading tweet...</div></div>
-                <div class="ex-verdict BULLSHIT">
-                    <div class="ex-icon"><svg viewBox="0 0 80 80"><line x1="18" y1="18" x2="62" y2="62" stroke="#ff3333" stroke-width="10" stroke-linecap="round"/><line x1="62" y1="18" x2="18" y2="62" stroke="#ff3333" stroke-width="10" stroke-linecap="round"/></svg></div>
-                    <div class="ex-label">Bullshit</div>
+            <div class="ex-grid">
+                <div class="ex-card">
+                    <div class="ex-click-overlay" onclick="loadExampleUrl(0)"></div>
+                    <div class="ex-embed" id="ex-embed-0"></div>
+                    <div class="ex-verdict BULLSHIT">
+                        <div class="ex-icon"><svg viewBox="0 0 80 80"><line x1="18" y1="18" x2="62" y2="62" stroke="#ff3333" stroke-width="10" stroke-linecap="round"/><line x1="62" y1="18" x2="18" y2="62" stroke="#ff3333" stroke-width="10" stroke-linecap="round"/></svg></div>
+                        <div class="ex-label">Bullshit</div>
+                    </div>
                 </div>
-            </div>
-            <div class="ex-card" onclick="loadExampleUrl(1)">
-                <div class="ex-embed" id="ex-embed-1"><div class="ex-loading">Loading tweet...</div></div>
-                <div class="ex-verdict LEGIT">
-                    <div class="ex-icon"><svg viewBox="0 0 80 80"><polyline points="14,44 32,60 66,22" stroke="#33ff66" stroke-width="10" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></div>
-                    <div class="ex-label">Legit</div>
+                <div class="ex-card">
+                    <div class="ex-click-overlay" onclick="loadExampleUrl(1)"></div>
+                    <div class="ex-embed" id="ex-embed-1"></div>
+                    <div class="ex-verdict LEGIT">
+                        <div class="ex-icon"><svg viewBox="0 0 80 80"><polyline points="14,44 32,60 66,22" stroke="#33ff66" stroke-width="10" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></div>
+                        <div class="ex-label">Legit</div>
+                    </div>
                 </div>
-            </div>
-            <div class="ex-card" onclick="loadExampleUrl(2)">
-                <div class="ex-embed" id="ex-embed-2"><div class="ex-loading">Loading tweet...</div></div>
-                <div class="ex-verdict INCONCLUSIVE">
-                    <div class="ex-icon"><svg viewBox="0 0 80 80"><text x="50%" y="55%" dominant-baseline="central" text-anchor="middle" fill="#ffc800" font-size="56" font-weight="900" font-family="Inter,sans-serif">?</text></svg></div>
-                    <div class="ex-label">Inconclusive</div>
+                <div class="ex-card">
+                    <div class="ex-click-overlay" onclick="loadExampleUrl(2)"></div>
+                    <div class="ex-embed" id="ex-embed-2"></div>
+                    <div class="ex-verdict BULLSHIT">
+                        <div class="ex-icon"><svg viewBox="0 0 80 80"><line x1="18" y1="18" x2="62" y2="62" stroke="#ff3333" stroke-width="10" stroke-linecap="round"/><line x1="62" y1="18" x2="18" y2="62" stroke="#ff3333" stroke-width="10" stroke-linecap="round"/></svg></div>
+                        <div class="ex-label">Bullshit</div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -636,40 +647,71 @@
         const API = window.location.origin;
         let currentUrl = '', currentText = '', embedHtml = '';
 
-        const exampleUrls = [
-            "https://x.com/BDCryptoGuru/status/1977395340622926217",
-            "https://x.com/NASA/status/2028957500897206315",
-            "https://x.com/elonmusk/status/1893657900851278115",
+        const exampleData = [
+            {
+                url: "https://x.com/juangomezbada/status/1867489492749476091",
+                html: '<blockquote class="twitter-tweet" data-theme="dark" data-conversation="none"><p lang="es" dir="ltr">La deuda pública de Argentina es ya mucho más sostenible que la de países como España, Francia, Alemania o Estados Unidos.<br><br>Invierto en deuda argentina y creo que no estoy loco</p>&mdash; Juan Gómez Bada (@juangomezbada) <a href="https://twitter.com/juangomezbada/status/1867489492749476091?ref_src=twsrc%5Etfw">December 13, 2024</a></blockquote>',
+                verdict: { verdict: "BULLSHIT", confidence: 95, reason: "Argentina has a history of nine sovereign defaults and carries credit ratings in deep junk territory (CCC/D), whereas the US and European nations hold investment-grade ratings with stable currencies. The claim conflates high-risk/high-yield returns with 'sustainability,' ignoring that Argentina's debt-to-GDP ratio and inflation rates are drastically higher and more unstable than the countries listed.", red_flags: ["La deuda pública de Argentina es ya mucho más sostenible que la de países como España, Francia, Alemania o Estados Unidos", "Invierto en deuda argentina y creo que no estoy loco"], evidence_summary: "Technical assessment shows Argentina's debt sustainability is statistically far worse than Germany, France, Spain, or the US based on Debt-to-GDP ratios, credit default swap (CDS) spreads, and credit ratings." },
+            },
+            {
+                url: "https://x.com/NASA/status/2028957500897206315",
+                html: '<blockquote class="twitter-tweet" data-theme="dark" data-conversation="none"><p lang="en" dir="ltr">The Artemis II mission, set to launch no earlier than April 2026, remains unchanged. Four astronauts will journey around the Moon and verify the Orion spacecraft\'s critical life support systems and prepare for future Artemis missions.</p>&mdash; NASA (@NASA) <a href="https://twitter.com/NASA/status/2028957500897206315">March 3, 2026</a></blockquote>',
+                verdict: { verdict: "LEGIT", confidence: 95, reason: "The statement is a direct, factual description of the current NASA Artemis II mission plan, matching official NASA communications regarding the mission profile, timeline, and objectives.", red_flags: [], evidence_summary: "The claim is independently verifiable against NASA's official Artemis II documentation. The technical description is accurate: Artemis II is a crewed lunar flyby mission designed to test Orion's systems. The author (@NASA) is the primary source and official agency account." },
+            },
+            {
+                url: "https://x.com/elonmusk/status/1893657900851278115",
+                html: '<blockquote class="twitter-tweet" data-theme="dark" data-conversation="none"><p lang="en" dir="ltr">The reason this matters is that a significant number of people who are supposed to be working for the government are doing so little work that they are not checking their email at all!<br><br>In some cases, we believe non-existent people or the identities of dead people are being used…</p>&mdash; Elon Musk (@elonmusk) <a href="https://twitter.com/elonmusk/status/1893657900851278115">February 23, 2025</a></blockquote>',
+                verdict: { verdict: "BULLSHIT", confidence: 75, reason: "The claim makes extraordinary assertions about government employees ('non-existent people or the identities of dead people') without providing any verifiable evidence, data sources, or methodology. Using email checking as a metric for work productivity is fundamentally flawed.", red_flags: ["we believe non-existent people or the identities of dead people are being used", "doing so little work that they are not checking their email at all", "a significant number of people"], evidence_summary: "No web evidence was provided to substantiate these serious allegations. The technical premise is flawed — email activity is not a reliable indicator of work performance. Vague quantifiers like 'significant number' and 'we believe' indicate speculation rather than verified findings." },
+            }
         ];
 
-        // Load example tweet embeds on page load
-        async function loadExampleEmbeds() {
-            for (let i = 0; i < exampleUrls.length; i++) {
-                try {
-                    const resp = await fetch(`https://publish.twitter.com/oembed?url=${encodeURIComponent(exampleUrls[i])}&theme=dark&omit_script=true&maxwidth=400`);
-                    const data = await resp.json();
-                    const el = document.getElementById(`ex-embed-${i}`);
-                    if (el && data.html) {
-                        el.innerHTML = data.html;
-                        if (window.twttr?.widgets) window.twttr.widgets.load(el);
-                    }
-                } catch (e) {
-                    const el = document.getElementById(`ex-embed-${i}`);
-                    if (el) el.innerHTML = `<div class="ex-loading" style="color:#555;">Could not load preview</div>`;
+        // Render example tweet widgets
+        function loadExampleEmbeds() {
+            for (let i = 0; i < exampleData.length; i++) {
+                const el = document.getElementById(`ex-embed-${i}`);
+                if (el) {
+                    el.innerHTML = exampleData[i].html;
+                    if (window.twttr?.widgets) window.twttr.widgets.load(el);
                 }
             }
         }
 
-        // Init examples after Twitter widgets.js loads
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', () => setTimeout(loadExampleEmbeds, 500));
-        } else {
-            setTimeout(loadExampleEmbeds, 500);
+        // Wait for widgets.js to be ready
+        function initExamples() {
+            if (window.twttr?.widgets) {
+                loadExampleEmbeds();
+            } else {
+                setTimeout(initExamples, 500);
+            }
         }
+        setTimeout(initExamples, 300);
 
         function loadExampleUrl(i) {
-            document.getElementById('post-url').value = exampleUrls[i];
-            loadPost();
+            const ex = exampleData[i];
+            currentUrl = ex.url;
+            embedHtml = ex.html;
+            currentText = extractText(embedHtml) || ex.html.replace(/<[^>]+>/g, ' ').trim();
+
+            resetResult();
+            hide('fallback');
+            show('stage');
+
+            document.getElementById('post-url').value = ex.url;
+            document.getElementById('tweet-full').style.display = 'none';
+
+            const leftEmbed = document.getElementById('split-left-embed');
+            const rightEmbed = document.getElementById('split-right-embed');
+            leftEmbed.innerHTML = embedHtml;
+            rightEmbed.innerHTML = embedHtml;
+            if (window.twttr?.widgets) {
+                window.twttr.widgets.load(leftEmbed);
+                window.twttr.widgets.load(rightEmbed);
+            }
+
+            document.getElementById('analyzing-overlay').classList.add('hidden');
+            document.getElementById('tweet-split').classList.add('active');
+
+            showResult({...ex.verdict, cached: true});
         }
 
         function extractText(html) {

@@ -729,6 +729,9 @@
             hide('fallback');
             show('stage');
 
+            // Scroll to the result area
+            document.getElementById('stage').scrollIntoView({ behavior: 'smooth', block: 'start' });
+
             document.getElementById('post-url').value = ex.url;
             document.getElementById('tweet-full').style.display = 'none';
 

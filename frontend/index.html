@@ -564,10 +564,19 @@
 
         <!-- Examples -->
         <div class="examples">
-            <h3>Try an example</h3>
-            <div class="ex" onclick="loadExample(0)">I made $100,000 in just 2 weeks using this AI trading bot. It literally prints money. DM me for the link, only 10 spots left!</div>
-            <div class="ex" onclick="loadExample(1)">Breaking: NASA confirms water ice deposits found in permanently shadowed craters on the Moon's south pole</div>
-            <div class="ex" onclick="loadExample(2)">This new crypto token went up 50,000% in 24 hours and it's still early! The dev doxxed himself and liquidity is locked. Easy 100x from here</div>
+            <h3>Try a real post</h3>
+            <div class="ex" onclick="loadExampleUrl(0)">
+                <span style="color:#ff3333;font-weight:700;font-size:0.7rem;letter-spacing:1px;">LIKELY BS</span>
+                <span style="margin-left:8px;">@BDCryptoGuru &mdash; "ERIC TRUMP JUST ORDERED A MEGA YACHT WORTH $500M AFTER SELLING $WLFI"</span>
+            </div>
+            <div class="ex" onclick="loadExampleUrl(1)">
+                <span style="color:#33ff66;font-weight:700;font-size:0.7rem;letter-spacing:1px;">LIKELY LEGIT</span>
+                <span style="margin-left:8px;">@NASA &mdash; Artemis II mission update: four astronauts to journey around the Moon</span>
+            </div>
+            <div class="ex" onclick="loadExampleUrl(2)">
+                <span style="color:#ffc800;font-weight:700;font-size:0.7rem;letter-spacing:1px;">DEBATABLE</span>
+                <span style="margin-left:8px;">@elonmusk &mdash; "Non-existent people or identities of dead people are being used" to collect government paychecks</span>
+            </div>
         </div>
 
     </div>
@@ -577,10 +586,10 @@
         const API = window.location.origin;
         let currentUrl = '', currentText = '', embedHtml = '';
 
-        const examples = [
-            "I made $100,000 in just 2 weeks using this AI trading bot. It literally prints money. DM me for the link, only 10 spots left!",
-            "Breaking: NASA confirms water ice deposits found in permanently shadowed craters on the Moon's south pole",
-            "This new crypto token went up 50,000% in 24 hours and it's still early! The dev doxxed himself and liquidity is locked. Easy 100x from here",
+        const exampleUrls = [
+            "https://x.com/BDCryptoGuru/status/1977395340622926217",
+            "https://x.com/NASA/status/2028957500897206315",
+            "https://x.com/elonmusk/status/1893657900851278115",
         ];
 
         function extractText(html) {
@@ -722,22 +731,9 @@
             }
         }
 
-        function loadExample(i) {
-            currentUrl = '';
-            currentText = examples[i];
-            document.getElementById('claim-text').value = examples[i];
-            document.getElementById('post-url').value = '';
-
-            resetResult();
-            hide('fallback');
-            show('stage');
-
-            embedHtml = `<div style="padding:16px;color:#ccc;font-size:0.92rem;line-height:1.7;">&ldquo;${examples[i]}&rdquo;<div style="color:#444;font-size:0.75rem;margin-top:8px;">Example post</div></div>`;
-            document.getElementById('embed-wrap').innerHTML = embedHtml;
-            document.getElementById('tweet-full').style.display = '';
-            document.getElementById('tweet-split').classList.remove('active');
-
-            startAnalysis();
+        function loadExampleUrl(i) {
+            document.getElementById('post-url').value = exampleUrls[i];
+            loadPost();
         }
 
         function startAnalysis() {

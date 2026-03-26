@@ -9,4 +9,4 @@ services:
       - key: GENLAYER_PRIVATE_KEY
         sync: false
       - key: GENLAYER_CHAIN
-        value: studionet
+        value: testnet_bradbury

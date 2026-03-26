@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: bullshit-detector
+    runtime: docker
+    plan: free
+    envVars:
+      - key: GENLAYER_CONTRACT_ADDRESS
+        sync: false
+      - key: GENLAYER_PRIVATE_KEY
+        sync: false
+      - key: GENLAYER_CHAIN
+        value: studionet

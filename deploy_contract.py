@@ -29,8 +29,8 @@ def main():
     # Deploy the contract
     try:
         tx_hash = client.deploy_contract(
+            code=contract_code,
             account=account,
-            contract_code=contract_code,
             args=[],
         )
         print(f"Deploy TX hash: {tx_hash}")

@@ -433,7 +433,7 @@
         .ex-card:hover { border-color: rgba(123,104,238,0.3); background: rgba(123,104,238,0.03); transform: translateY(-2px); box-shadow: 0 4px 20px rgba(0,0,0,0.3); }
 
         .ex-card .ex-click-overlay {
-            position: absolute; inset: 0; z-index: 10; cursor: pointer;
+            position: absolute; inset: 0; z-index: 999; cursor: pointer;
         }
         .ex-card .ex-embed {
             flex: 1; overflow: hidden; max-height: 300px; pointer-events: none;
@@ -686,11 +686,10 @@
         }
         setTimeout(initExamples, 300);
 
-        function loadExampleUrl(i) {
+        async function loadExampleUrl(i) {
             const ex = exampleData[i];
             currentUrl = ex.url;
-            embedHtml = ex.html;
-            currentText = extractText(embedHtml) || ex.html.replace(/<[^>]+>/g, ' ').trim();
+            currentText = extractText(ex.html) || ex.html.replace(/<[^>]+>/g, ' ').trim();
 
             resetResult();
             hide('fallback');
@@ -699,10 +698,19 @@
             document.getElementById('post-url').value = ex.url;
             document.getElementById('tweet-full').style.display = 'none';
 
+            // Fetch real oEmbed for the split view
+            let splitHtml = ex.html;
+            try {
+                const resp = await fetch(`https://publish.twitter.com/oembed?url=${encodeURIComponent(ex.url)}&theme=dark&omit_script=true`);
+                const data = await resp.json();
+                if (data.html) splitHtml = data.html;
+            } catch (e) {}
+
+            embedHtml = splitHtml;
             const leftEmbed = document.getElementById('split-left-embed');
             const rightEmbed = document.getElementById('split-right-embed');
-            leftEmbed.innerHTML = embedHtml;
-            rightEmbed.innerHTML = embedHtml;
+            leftEmbed.innerHTML = splitHtml;
+            rightEmbed.innerHTML = splitHtml;
             if (window.twttr?.widgets) {
                 window.twttr.widgets.load(leftEmbed);
                 window.twttr.widgets.load(rightEmbed);

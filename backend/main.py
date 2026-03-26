@@ -7,12 +7,21 @@ import os
 import json
 import hashlib
 import asyncio
-from fastapi import FastAPI, HTTPException
+import logging
+import time
+from collections import defaultdict
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from genlayer_service import GenLayerService
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(message)s",
+)
+logger = logging.getLogger("bs-detector")
 
 app = FastAPI(title="Bullshit Detector", version="1.0.0")
 
@@ -23,6 +32,19 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Simple in-memory rate limiter: max 10 verify requests per minute per IP
+RATE_LIMIT = 10
+RATE_WINDOW = 60
+_rate_counts: dict[str, list[float]] = defaultdict(list)
+
+
+def _check_rate_limit(ip: str):
+    now = time.time()
+    _rate_counts[ip] = [t for t in _rate_counts[ip] if now - t < RATE_WINDOW]
+    if len(_rate_counts[ip]) >= RATE_LIMIT:
+        raise HTTPException(status_code=429, detail="Too many requests. Try again in a minute.")
+    _rate_counts[ip].append(now)
 
 genlayer = GenLayerService()
 
@@ -46,42 +68,54 @@ class VerifyUrlRequest(BaseModel):
 
 
 @app.post("/api/verify/text")
-async def verify_text(request: VerifyTextRequest):
+async def verify_text(request: VerifyTextRequest, req: Request):
     """Verify a claim by its text content."""
     if not request.claim_text.strip():
         raise HTTPException(status_code=400, detail="Claim text cannot be empty")
 
+    _check_rate_limit(req.client.host)
+
     # Check cache first
     key = _cache_key(request.claim_text)
     if key in _cache:
+        logger.info("Cache hit for claim (key=%s)", key)
         return {**_cache[key], "cached": True}
 
     try:
+        logger.info("Verifying claim: %.80s...", request.claim_text)
         result = await genlayer.verify_claim(
             claim_text=request.claim_text,
             source_url=request.source_url,
         )
         _cache[key] = result
+        logger.info("Verdict: %s (confidence: %s)", result.get("verdict"), result.get("confidence"))
         return {**result, "cached": False}
     except Exception as e:
+        logger.error("Verify text failed: %s", e)
         raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.post("/api/verify/url")
-async def verify_url(request: VerifyUrlRequest):
+async def verify_url(request: VerifyUrlRequest, req: Request):
     """Verify a claim by fetching its URL."""
     if not request.url.strip():
         raise HTTPException(status_code=400, detail="URL cannot be empty")
 
+    _check_rate_limit(req.client.host)
+
     key = _cache_key(request.url)
     if key in _cache:
+        logger.info("Cache hit for URL (key=%s)", key)
         return {**_cache[key], "cached": True}
 
     try:
+        logger.info("Verifying URL: %s", request.url)
         result = await genlayer.verify_url(url=request.url)
         _cache[key] = result
+        logger.info("Verdict: %s (confidence: %s)", result.get("verdict"), result.get("confidence"))
         return {**result, "cached": False}
     except Exception as e:
+        logger.error("Verify URL failed: %s", e)
         raise HTTPException(status_code=500, detail=str(e))
 
 

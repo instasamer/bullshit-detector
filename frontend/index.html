@@ -665,23 +665,57 @@
             }
         ];
 
-        // Render example tweet widgets
+        // Build a styled fallback card from blockquote HTML
+        function buildFallbackCard(html) {
+            const d = document.createElement('div');
+            d.innerHTML = html;
+            const bq = d.querySelector('blockquote');
+            if (!bq) return html;
+            const paragraphs = Array.from(bq.querySelectorAll('p')).map(p => p.innerHTML).join('<br>');
+            const authorMatch = html.match(/&mdash;\s*(.*?)(?:<a|$)/);
+            const author = authorMatch ? authorMatch[1].trim() : '';
+            return `<div style="padding:16px;color:#ccc;font-size:0.85rem;line-height:1.5;">
+                <div style="margin-bottom:8px;color:#1d9bf0;">𝕏</div>
+                <div>${paragraphs}</div>
+                ${author ? `<div style="margin-top:10px;font-size:0.75rem;color:#666;">${author}</div>` : ''}
+            </div>`;
+        }
+
+        // Render example tweet widgets with fallback
         function loadExampleEmbeds() {
             for (let i = 0; i < exampleData.length; i++) {
                 const el = document.getElementById(`ex-embed-${i}`);
                 if (el) {
                     el.innerHTML = exampleData[i].html;
-                    if (window.twttr?.widgets) window.twttr.widgets.load(el);
+                    if (window.twttr?.widgets) {
+                        window.twttr.widgets.load(el).then(() => {
+                            // Check if widget actually rendered
+                            setTimeout(() => {
+                                if (!el.querySelector('iframe') && !el.querySelector('twitter-widget')) {
+                                    el.innerHTML = buildFallbackCard(exampleData[i].html);
+                                }
+                            }, 3000);
+                        });
+                    } else {
+                        el.innerHTML = buildFallbackCard(exampleData[i].html);
+                    }
                 }
             }
         }
 
-        // Wait for widgets.js to be ready
+        // Wait for widgets.js to be ready, but don't wait forever
         function initExamples() {
             if (window.twttr?.widgets) {
                 loadExampleEmbeds();
             } else {
-                setTimeout(initExamples, 500);
+                // Try a few times, then load with fallback
+                if (!initExamples._tries) initExamples._tries = 0;
+                initExamples._tries++;
+                if (initExamples._tries > 6) {
+                    loadExampleEmbeds(); // will use fallback
+                } else {
+                    setTimeout(initExamples, 500);
+                }
             }
         }
         setTimeout(initExamples, 300);
@@ -698,22 +732,28 @@
             document.getElementById('post-url').value = ex.url;
             document.getElementById('tweet-full').style.display = 'none';
 
-            // Fetch real oEmbed for the split view
-            let splitHtml = ex.html;
-            try {
-                const resp = await fetch(`https://publish.twitter.com/oembed?url=${encodeURIComponent(ex.url)}&theme=dark&omit_script=true`);
-                const data = await resp.json();
-                if (data.html) splitHtml = data.html;
-            } catch (e) {}
-
-            embedHtml = splitHtml;
+            // Use the blockquote HTML directly (oEmbed CORS fails from browser)
+            const fallback = buildFallbackCard(ex.html);
+            embedHtml = ex.html;
             const leftEmbed = document.getElementById('split-left-embed');
             const rightEmbed = document.getElementById('split-right-embed');
-            leftEmbed.innerHTML = splitHtml;
-            rightEmbed.innerHTML = splitHtml;
+
+            // Try Twitter widget first, fallback to styled card
+            leftEmbed.innerHTML = ex.html;
+            rightEmbed.innerHTML = ex.html;
             if (window.twttr?.widgets) {
                 window.twttr.widgets.load(leftEmbed);
                 window.twttr.widgets.load(rightEmbed);
+                // Fallback if widgets don't render
+                setTimeout(() => {
+                    if (!leftEmbed.querySelector('iframe') && !leftEmbed.querySelector('twitter-widget')) {
+                        leftEmbed.innerHTML = fallback;
+                        rightEmbed.innerHTML = fallback;
+                    }
+                }, 3000);
+            } else {
+                leftEmbed.innerHTML = fallback;
+                rightEmbed.innerHTML = fallback;
             }
 
             document.getElementById('analyzing-overlay').classList.add('hidden');

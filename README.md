@@ -65,7 +65,7 @@ Tweet URL → Extract content → Submit to GenLayer contract
 └──────────────────┬──────────────────────────┘
                    │ genlayer-py SDK
 ┌──────────────────▼──────────────────────────┐
-│         GenLayer StudioNet                   │
+│      GenLayer Testnet Bradbury               │
 │    ┌─────────────────────────────┐          │
 │    │   BullshitDetector Contract │          │
 │    │  - Evidence gathering       │          │
@@ -114,7 +114,7 @@ Edit `.env` with the values from `deploy_config.json`:
 ```env
 GENLAYER_CONTRACT_ADDRESS=0x...
 GENLAYER_PRIVATE_KEY=0x...
-GENLAYER_CHAIN=studionet
+GENLAYER_CHAIN=testnet_bradbury
 ```
 
 ### 4. Run
@@ -184,7 +184,7 @@ The `BullshitDetector` contract (`contracts/bullshit_detector.py`) runs on GenLa
 | Frontend | Vanilla JS, CSS3 (glassmorphism, aurora effects) |
 | Backend | FastAPI, Uvicorn, Pydantic |
 | Contract | GenLayer Intelligent Contract (Python) |
-| Chain | GenLayer StudioNet |
+| Chain | GenLayer Testnet Bradbury |
 | SDK | genlayer-py |
 
 ## License

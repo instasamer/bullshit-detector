@@ -58,6 +58,7 @@ def _patch_genlayer_provider():
         _orig_encode = _actions._encode_add_transaction_data
 
         def _patched_encode(self, sender_account, recipient, consensus_max_rotations, data, valid_until=0):
+            import logging as _logging
             from eth_abi import encode as abi_encode
             import eth_utils
             consensus_main_contract = self.w3.eth.contract(
@@ -74,6 +75,15 @@ def _patch_genlayer_provider():
             if len(contract_fn.argument_types) >= 6:
                 effective_valid_until = valid_until if valid_until > 0 else int(_time.time()) + 3600
                 add_transaction_args.append(effective_valid_until)
+                _logging.getLogger("bs-detector").info(
+                    "_patched_encode: arg_types=%d valid_until=%d now=%d",
+                    len(contract_fn.argument_types), effective_valid_until, int(_time.time()),
+                )
+            else:
+                _logging.getLogger("bs-detector").warning(
+                    "_patched_encode: only %d arg types — NOT adding valid_until",
+                    len(contract_fn.argument_types),
+                )
             params = abi_encode(contract_fn.argument_types, add_transaction_args)
             function_selector = eth_utils.keccak(text=contract_fn.signature)[:4].hex()
             return "0x" + function_selector + params.hex()

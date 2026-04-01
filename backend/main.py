@@ -155,7 +155,7 @@ async def poll_job(job_id: str):
     if job is None:
         raise HTTPException(status_code=404, detail="Job not found")
     if job["status"] == "done":
-        return {**job["result"], "status": "done", "cached": False}
+        return {**job["result"], "status": "done", "cached": False, "job_id": job_id}
     if job["status"] == "error":
         raise HTTPException(status_code=500, detail=job.get("error", "Verification failed"))
     return {"status": "pending"}

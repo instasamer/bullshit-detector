@@ -96,8 +96,9 @@ async def verify_text(request: VerifyTextRequest, req: Request):
         logger.info("Verdict: %s (confidence: %s)", result.get("verdict"), result.get("confidence"))
         return {**result, "cached": False}
     except Exception as e:
-        logger.error("Verify text failed: %s", e)
-        raise HTTPException(status_code=500, detail=str(e))
+        import traceback
+        logger.error("Verify text failed: %s\n%s", e, traceback.format_exc())
+        raise HTTPException(status_code=500, detail=f"{type(e).__name__}: {e}")
 
 
 @app.post("/api/verify/url")

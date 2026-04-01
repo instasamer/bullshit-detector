@@ -885,7 +885,8 @@
                     renderEmbed(wrap, embedHtml);
 
                     if (extracted.combinedText) {
-                        currentText = extracted.combinedText;
+                        // Strip Twitter/t.co URLs so the contract doesn't waste its web fetch on them
+                        currentText = extracted.combinedText.replace(/https?:\/\/(t\.co|twitter\.com|x\.com)\/\S+/g, '').trim();
                         document.getElementById('claim-text').value = currentText;
 
                         // If there's a quoted tweet, show it in the embed too

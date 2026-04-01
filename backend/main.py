@@ -9,6 +9,8 @@ import hashlib
 import asyncio
 import logging
 import time
+from dotenv import load_dotenv
+load_dotenv()
 from collections import defaultdict
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware

@@ -106,7 +106,12 @@ def _patch_genlayer_provider():
             )["result"]
             tx_receipt = self.w3.eth.wait_for_transaction_receipt(tx_hash)
             if tx_receipt.status != 1:
-                raise GenLayerError("Transaction failed")
+                import logging as _logging
+                _logging.getLogger("bs-detector").error(
+                    "ETH transaction reverted: hash=%s status=%s gasUsed=%s",
+                    tx_hash, tx_receipt.status, tx_receipt.get("gasUsed"),
+                )
+                raise GenLayerError(f"Transaction failed (hash={tx_hash})")
             consensus_main_contract = self.w3.eth.contract(
                 abi=self.chain.consensus_main_contract["abi"]
             )

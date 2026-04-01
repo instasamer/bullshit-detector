@@ -190,10 +190,9 @@ class GenLayerService:
             self._client = create_client(chain=chain, account=self._account)
         return self._client
 
-    async def verify_claim(self, claim_text: str, source_url: str = "") -> dict:
-        """Send a claim to the GenLayer contract for verification."""
+    async def submit_claim(self, claim_text: str, source_url: str = "") -> str:
+        """Submit a claim to the GenLayer contract and return the tx hash immediately."""
         client = self._get_client()
-
         tx_hash = await asyncio.to_thread(
             partial(
                 client.write_contract,
@@ -204,26 +203,11 @@ class GenLayerService:
                 value=0,
             )
         )
+        return tx_hash
 
-        # Wait for ACCEPTED (validators have reached consensus)
-        await asyncio.to_thread(
-            partial(
-                client.wait_for_transaction_receipt,
-                transaction_hash=tx_hash,
-                interval=6000,
-                retries=100,
-            )
-        )
-
-        # Extract verdict from consensus data contract directly
-        return await asyncio.to_thread(
-            partial(_extract_verdict_from_tx, client, tx_hash)
-        )
-
-    async def verify_url(self, url: str) -> dict:
-        """Send a URL to the GenLayer contract for verification."""
+    async def submit_url(self, url: str) -> str:
+        """Submit a URL to the GenLayer contract and return the tx hash immediately."""
         client = self._get_client()
-
         tx_hash = await asyncio.to_thread(
             partial(
                 client.write_contract,
@@ -234,16 +218,69 @@ class GenLayerService:
                 value=0,
             )
         )
+        return tx_hash
 
+    def get_tx_status(self, tx_hash: str) -> tuple[int, dict | None]:
+        """
+        Return (status_int, verdict_or_None).
+        Status >= 4 means ACCEPTED/FINALIZED — verdict is ready.
+        """
+        client = self._get_client()
+        tx = client.get_transaction(transaction_hash=tx_hash)
+        if isinstance(tx, dict):
+            status = int(tx.get("status", 0))
+            if status >= 4:
+                verdict = _extract_verdict_from_tx(client, tx_hash)
+                return status, verdict
+            return status, None
+        return 0, None
+
+    async def verify_claim(self, claim_text: str, source_url: str = "") -> dict:
+        """Submit and wait synchronously (kept for local/test use)."""
+        client = self._get_client()
+        tx_hash = await asyncio.to_thread(
+            partial(
+                client.write_contract,
+                account=self._account,
+                address=self.contract_address,
+                function_name="verify_claim",
+                args=[claim_text, source_url],
+                value=0,
+            )
+        )
         await asyncio.to_thread(
             partial(
                 client.wait_for_transaction_receipt,
                 transaction_hash=tx_hash,
                 interval=6000,
-                retries=100,
+                retries=300,
             )
         )
+        return await asyncio.to_thread(
+            partial(_extract_verdict_from_tx, client, tx_hash)
+        )
 
+    async def verify_url(self, url: str) -> dict:
+        """Submit and wait synchronously (kept for local/test use)."""
+        client = self._get_client()
+        tx_hash = await asyncio.to_thread(
+            partial(
+                client.write_contract,
+                account=self._account,
+                address=self.contract_address,
+                function_name="verify_url",
+                args=[url],
+                value=0,
+            )
+        )
+        await asyncio.to_thread(
+            partial(
+                client.wait_for_transaction_receipt,
+                transaction_hash=tx_hash,
+                interval=6000,
+                retries=300,
+            )
+        )
         return await asyncio.to_thread(
             partial(_extract_verdict_from_tx, client, tx_hash)
         )

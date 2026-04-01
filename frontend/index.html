@@ -942,7 +942,7 @@
             hide('error'); hide('verdict-bar'); hide('reasoning'); hide('seal');
             document.getElementById('main-btn').disabled = true;
 
-            const steps = ['Submitting to GenLayer...', 'Lead validator analyzing...', 'Checking for red flags...', 'Co-validators verifying...', 'Reaching consensus...'];
+            const steps = ['Submitting to GenLayer...', 'Lead validator analyzing...', 'Checking for red flags...', 'Co-validators verifying...', 'Reaching consensus...', 'Waiting for validator votes...', 'Almost there...'];
             let si = 0;
             const iv = setInterval(() => {
                 si = Math.min(si + 1, steps.length - 1);
@@ -951,14 +951,36 @@
             }, 5000);
 
             try {
+                // Submit the claim — returns immediately with job_id
                 const r = await fetch(`${API}/api/verify/text`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ claim_text: text, source_url: currentUrl }),
                 });
-                clearInterval(iv);
                 if (!r.ok) { const e = await r.json().catch(() => ({})); throw new Error(e.detail || `Error ${r.status}`); }
-                showResult(await r.json());
+                const submitted = await r.json();
+
+                // If cache hit, result is immediate
+                if (submitted.status === 'done' || submitted.verdict) {
+                    clearInterval(iv);
+                    showResult(submitted);
+                    return;
+                }
+
+                // Poll until done
+                const jobId = submitted.job_id;
+                while (true) {
+                    await new Promise(res => setTimeout(res, 8000));
+                    const poll = await fetch(`${API}/api/poll/${jobId}`);
+                    if (!poll.ok) { const e = await poll.json().catch(() => ({})); throw new Error(e.detail || `Poll error ${poll.status}`); }
+                    const pollData = await poll.json();
+                    if (pollData.status === 'done' || pollData.verdict) {
+                        clearInterval(iv);
+                        showResult(pollData);
+                        return;
+                    }
+                    // status === 'pending', keep polling
+                }
             } catch (e) {
                 clearInterval(iv);
                 document.getElementById('error').textContent = e.message;

@@ -127,6 +127,32 @@ def _patch_genlayer_provider():
     except Exception:
         pass
 
+    # Patch GenLayerRawTransaction.LastRound.decode to handle Bradbury bytes32 votes
+    try:
+        from genlayer_py.types.transactions import GenLayerRawTransaction, VOTE_TYPE_NUMBER_TO_NAME as _VOTE_MAP
+
+        def _patched_last_round_decode(self):
+            return {
+                "round": str(self.round),
+                "leader_index": str(self.leader_index),
+                "votes_committed": str(self.votes_committed),
+                "votes_revealed": str(self.votes_revealed),
+                "appeal_bond": str(self.appeal_bond),
+                "rotations_left": str(self.rotations_left),
+                "result": str(self.result),
+                "round_validators": self.round_validators,
+                "validator_votes_hash": self.validator_votes_hash,
+                "validator_votes": self.validator_votes,
+                "validator_votes_name": [
+                    _VOTE_MAP[str(vote)].value if str(vote) in _VOTE_MAP else str(vote)
+                    for vote in self.validator_votes
+                ],
+            }
+
+        GenLayerRawTransaction.LastRound.decode = _patched_last_round_decode
+    except Exception:
+        pass
+
 
 _patch_genlayer_provider()
 

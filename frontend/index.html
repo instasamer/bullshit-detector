@@ -335,6 +335,25 @@
         .error { display: none; padding: 12px 16px; background: rgba(215,25,33,0.06); border: 1px solid rgba(215,25,33,0.2); border-radius: 2px; font-family: var(--mono); color: var(--red); font-size: 0.75rem; margin-top: 8px; letter-spacing: 0.5px; }
         .error.active { display: block; }
 
+        /* ===== FEED ===== */
+        .feed { margin-top: 40px; padding-top: 24px; border-top: 1px solid var(--border); }
+        .feed h3 { font-family: var(--mono); font-size: 0.6rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 3px; margin-bottom: 16px; font-weight: 400; }
+        .feed-empty { font-family: var(--mono); font-size: 0.65rem; color: var(--text-dim); letter-spacing: 0.5px; }
+        .feed-list { display: flex; flex-direction: column; gap: 4px; }
+        .feed-item {
+            display: flex; align-items: center; gap: 12px;
+            padding: 10px 14px; background: var(--surface);
+            border: 1px solid var(--border); border-radius: 2px;
+            cursor: pointer; transition: border-color 0.15s;
+        }
+        .feed-item:hover { border-color: var(--border-strong); }
+        .feed-badge { font-family: var(--mono); font-size: 0.55rem; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; padding: 3px 8px; border: 1px solid; border-radius: 1px; flex-shrink: 0; }
+        .feed-badge.BULLSHIT { color: var(--red); border-color: rgba(215,25,33,0.4); background: rgba(215,25,33,0.06); }
+        .feed-badge.LEGIT { color: var(--green); border-color: rgba(74,158,92,0.4); background: rgba(74,158,92,0.06); }
+        .feed-badge.INCONCLUSIVE { color: var(--amber); border-color: rgba(212,168,67,0.4); background: rgba(212,168,67,0.06); }
+        .feed-claim { flex: 1; font-size: 0.8rem; color: #999; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .feed-conf { font-family: var(--mono); font-size: 0.6rem; color: var(--text-dim); flex-shrink: 0; }
+
         /* ===== EXAMPLES ===== */
         .examples { margin-top: 40px; padding-top: 24px; border-top: 1px solid var(--border); }
         .examples h3 { font-family: var(--mono); font-size: 0.6rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 3px; margin-bottom: 16px; font-weight: 400; }
@@ -541,6 +560,14 @@
         <!-- Error -->
         <div class="error" id="error"></div>
 
+        <!-- Feed -->
+        <div class="feed" id="feed-section">
+            <h3>Recent detections</h3>
+            <div class="feed-list" id="feed-list">
+                <div class="feed-empty" id="feed-empty">No detections yet this session.</div>
+            </div>
+        </div>
+
         <!-- Examples -->
         <div class="examples">
             <h3>Try a real post</h3>
@@ -651,6 +678,37 @@
             }
         }
         setTimeout(initExamples, 300);
+
+        async function loadFeed() {
+            try {
+                const r = await fetch(`${API}/api/feed`);
+                if (!r.ok) return;
+                const { feed } = await r.json();
+                renderFeed(feed);
+            } catch (e) {}
+        }
+
+        function renderFeed(feed) {
+            const list = document.getElementById('feed-list');
+            const empty = document.getElementById('feed-empty');
+            if (!feed || feed.length === 0) { empty.style.display = ''; return; }
+            empty.style.display = 'none';
+            // Remove existing feed items (keep empty placeholder)
+            list.querySelectorAll('.feed-item').forEach(el => el.remove());
+            feed.forEach(item => {
+                const v = (item.verdict || 'INCONCLUSIVE').toUpperCase();
+                const label = v === 'LEGIT' ? 'LEGIT' : v === 'BULLSHIT' ? 'BS' : '?';
+                const claim = item.claim_text ? item.claim_text.slice(0, 120) : (item.source_url || '—');
+                const conf = item.confidence ? item.confidence + '%' : '';
+                const div = document.createElement('div');
+                div.className = 'feed-item';
+                div.innerHTML = `<span class="feed-badge ${v}">${label}</span><span class="feed-claim">${claim}</span><span class="feed-conf">${conf}</span>`;
+                if (item.source_url) div.onclick = () => { document.getElementById('post-url').value = item.source_url; loadPost(); };
+                list.appendChild(div);
+            });
+        }
+
+        loadFeed();
 
         async function loadExampleUrl(i) {
             const ex = exampleData[i];
@@ -1017,6 +1075,7 @@
 
             show('reasoning'); show('seal');
             document.getElementById('verdict-bar').scrollIntoView({ behavior: 'smooth', block: 'center' });
+            loadFeed();
         }
 
         function scrollToReasoning() {

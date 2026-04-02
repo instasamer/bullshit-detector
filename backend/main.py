@@ -59,6 +59,24 @@ _cache: dict[str, dict] = {}
 # Async job tracking: tx_hash → {"status": "pending"|"done"|"error", "result": {}, "error": ""}
 _jobs: dict[str, dict] = {}
 
+# Public feed of recent verified claims (last 20)
+_feed: list[dict] = []
+FEED_MAX = 20
+
+
+def _add_to_feed(verdict: dict):
+    entry = {
+        "verdict": verdict.get("verdict"),
+        "confidence": verdict.get("confidence"),
+        "claim_text": verdict.get("claim_text", ""),
+        "source_url": verdict.get("source_url", ""),
+        "tx_hash": verdict.get("tx_hash", ""),
+        "timestamp": time.time(),
+    }
+    _feed.insert(0, entry)
+    if len(_feed) > FEED_MAX:
+        _feed.pop()
+
 
 async def _poll_until_done(tx_hash: str, cache_key: str):
     """Background task: poll GenLayer every 10s until tx is ACCEPTED/FINALIZED."""
@@ -71,6 +89,7 @@ async def _poll_until_done(tx_hash: str, cache_key: str):
             if verdict is not None:
                 _jobs[tx_hash] = {"status": "done", "result": verdict}
                 _cache[cache_key] = verdict
+                _add_to_feed(verdict)
                 logger.info("Job %s done: %s (attempt %d)", tx_hash[:16], verdict.get("verdict"), attempt + 1)
                 return
         except Exception as e:
@@ -168,6 +187,12 @@ async def get_results():
         return await genlayer.get_all_results()
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/feed")
+async def get_feed():
+    """Get the public feed of recent verified claims."""
+    return {"feed": _feed}
 
 
 @app.get("/api/health")

@@ -564,29 +564,7 @@
         <!-- Examples -->
         <div class="examples">
             <h3>Examples</h3>
-            <div class="ex-grid">
-                <div class="ex-card" onclick="loadExampleUrl(0)">
-                    <div class="ex-embed" id="ex-embed-0"></div>
-                    <div class="ex-verdict BULLSHIT">
-                        <div class="ex-icon"><svg viewBox="0 0 80 80"><line x1="18" y1="18" x2="62" y2="62" stroke="#ff3333" stroke-width="10" stroke-linecap="round"/><line x1="62" y1="18" x2="18" y2="62" stroke="#ff3333" stroke-width="10" stroke-linecap="round"/></svg></div>
-                        <div class="ex-label">Bullshit</div>
-                    </div>
-                </div>
-                <div class="ex-card" onclick="loadExampleUrl(1)">
-                    <div class="ex-embed" id="ex-embed-1"></div>
-                    <div class="ex-verdict LEGIT">
-                        <div class="ex-icon"><svg viewBox="0 0 80 80"><polyline points="14,44 32,60 66,22" stroke="#33ff66" stroke-width="10" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></div>
-                        <div class="ex-label">Legit</div>
-                    </div>
-                </div>
-                <div class="ex-card" onclick="loadExampleUrl(2)">
-                    <div class="ex-embed" id="ex-embed-2"></div>
-                    <div class="ex-verdict BULLSHIT">
-                        <div class="ex-icon"><svg viewBox="0 0 80 80"><line x1="18" y1="18" x2="62" y2="62" stroke="#ff3333" stroke-width="10" stroke-linecap="round"/><line x1="62" y1="18" x2="18" y2="62" stroke="#ff3333" stroke-width="10" stroke-linecap="round"/></svg></div>
-                        <div class="ex-label">Bullshit</div>
-                    </div>
-                </div>
-            </div>
+            <div class="ex-grid" id="ex-grid"></div>
         </div>
 
     </div>
@@ -645,6 +623,28 @@
             </div>`;
         }
 
+        // Build example cards dynamically from exampleData
+        function buildExampleGrid() {
+            const grid = document.getElementById('ex-grid');
+            if (!grid) return;
+            const icons = {
+                BULLSHIT: '<svg viewBox="0 0 80 80"><line x1="18" y1="18" x2="62" y2="62" stroke="#ff3333" stroke-width="10" stroke-linecap="round"/><line x1="62" y1="18" x2="18" y2="62" stroke="#ff3333" stroke-width="10" stroke-linecap="round"/></svg>',
+                LEGIT: '<svg viewBox="0 0 80 80"><polyline points="14,44 32,60 66,22" stroke="#33ff66" stroke-width="10" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>',
+                INCONCLUSIVE: '<svg viewBox="0 0 80 80"><line x1="40" y1="18" x2="40" y2="50" stroke="#d4a843" stroke-width="10" stroke-linecap="round"/><circle cx="40" cy="62" r="5" fill="#d4a843"/></svg>',
+            };
+            const labels = { BULLSHIT: 'Bullshit', LEGIT: 'Legit', INCONCLUSIVE: 'Inconclusive' };
+            grid.innerHTML = exampleData.map((ex, i) => {
+                const v = ex.verdict.verdict;
+                return `<div class="ex-card" onclick="loadExampleUrl(${i})">
+                    <div class="ex-embed" id="ex-embed-${i}"></div>
+                    <div class="ex-verdict ${v}">
+                        <div class="ex-icon">${icons[v] || ''}</div>
+                        <div class="ex-label">${labels[v] || v}</div>
+                    </div>
+                </div>`;
+            }).join('');
+        }
+
         // Render Twitter embeds; pointer-events:none on container lets card onclick fire
         function loadExampleEmbeds() {
             for (let i = 0; i < exampleData.length; i++) {
@@ -652,11 +652,18 @@
                 if (!el) continue;
                 el.innerHTML = exampleData[i].html;
             }
-            window.twttr.widgets.load();
+            if (window.twttr && window.twttr.widgets) window.twttr.widgets.load();
         }
-        window.twttr = window.twttr || {};
-        window.twttr._e = window.twttr._e || [];
-        window.twttr._e.push(loadExampleEmbeds);
+
+        buildExampleGrid();
+
+        // Init embeds: try immediately, then wait for widgets.js
+        if (window.twttr && window.twttr.widgets) {
+            loadExampleEmbeds();
+        } else {
+            window.twttr = window.twttr || { _e: [] };
+            window.twttr._e.push(loadExampleEmbeds);
+        }
 
         async function loadFeed() {
             try {

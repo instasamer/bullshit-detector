@@ -818,7 +818,8 @@
             currentUrl = url;
 
             // If URL matches a hardcoded example, use it directly
-            const exIdx = exampleData.findIndex(e => url.includes(e.url.split('/status/')[1]?.split('?')[0]));
+            const _sid = u => { const m = u.match(/\/status\/(\d+)/); return m ? m[1] : null; };
+            const exIdx = exampleData.findIndex(e => _sid(e.url) && _sid(e.url) === _sid(url));
             if (exIdx !== -1) { loadExampleUrl(exIdx); return; }
 
             resetResult();

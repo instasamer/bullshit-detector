@@ -179,6 +179,7 @@ class GenLayerService:
         self.chain_name = os.environ.get("GENLAYER_CHAIN", "studionet")
         self._client = None
         self._account = None
+        self._tx_lock = asyncio.Lock()
 
     def _get_client(self):
         if self._client is None:
@@ -192,33 +193,35 @@ class GenLayerService:
 
     async def submit_claim(self, claim_text: str, source_url: str = "") -> str:
         """Submit a claim to the GenLayer contract and return the tx hash immediately."""
-        client = self._get_client()
-        tx_hash = await asyncio.to_thread(
-            partial(
-                client.write_contract,
-                account=self._account,
-                address=self.contract_address,
-                function_name="verify_claim",
-                args=[claim_text, source_url],
-                value=0,
+        async with self._tx_lock:
+            client = self._get_client()
+            tx_hash = await asyncio.to_thread(
+                partial(
+                    client.write_contract,
+                    account=self._account,
+                    address=self.contract_address,
+                    function_name="verify_claim",
+                    args=[claim_text, source_url],
+                    value=0,
+                )
             )
-        )
-        return tx_hash
+            return tx_hash
 
     async def submit_url(self, url: str) -> str:
         """Submit a URL to the GenLayer contract and return the tx hash immediately."""
-        client = self._get_client()
-        tx_hash = await asyncio.to_thread(
-            partial(
-                client.write_contract,
-                account=self._account,
-                address=self.contract_address,
-                function_name="verify_url",
-                args=[url],
-                value=0,
+        async with self._tx_lock:
+            client = self._get_client()
+            tx_hash = await asyncio.to_thread(
+                partial(
+                    client.write_contract,
+                    account=self._account,
+                    address=self.contract_address,
+                    function_name="verify_url",
+                    args=[url],
+                    value=0,
+                )
             )
-        )
-        return tx_hash
+            return tx_hash
 
     def get_tx_status(self, tx_hash: str) -> tuple[int, dict | None]:
         """

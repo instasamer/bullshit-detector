@@ -17,7 +17,7 @@ Contract: `0x6500d5ED0bCb805cDF35cFfCcAB118C9485AE7A2`
 
 ## What is this?
 
-Social media is full of misleading claims, fake gurus, and hype. **BS Detector** uses [GenLayer's](https://genlayer.com) decentralized AI infrastructure to fact-check posts — not one model, but **multiple independent AI validators** that must reach consensus on whether a claim is legit or bullshit.
+Social media is full of misleading claims, fake gurus, and hype. **BS Detector** uses [GenLayer's](https://genlayer.com) decentralized AI infrastructure to fact-check posts: not one model, but **multiple independent AI validators** that must reach consensus on whether a claim is legit or bullshit.
 
 ### How it works
 
@@ -36,16 +36,16 @@ Tweet URL → Extract content → Submit to GenLayer contract
 
 ### Key features
 
-- **Multi-validator consensus** — Multiple independent AI validators must agree on the verdict (Optimistic Democracy + Comparative Equivalence Principle)
-- **On-chain verifiable** — Results are stored on GenLayer's blockchain, not a centralized database
-- **Evidence-based** — Fetches URLs from claims, checks author credibility, detects manipulation tactics
-- **No single point of failure** — Decentralized infrastructure means no one entity controls the truth
+- **Multi-validator consensus**: Multiple independent AI validators must agree on the verdict (Optimistic Democracy + Comparative Equivalence Principle)
+- **On-chain verifiable**: Results are stored on GenLayer's blockchain, not a centralized database
+- **Evidence-based**: Fetches URLs from claims, checks author credibility, detects manipulation tactics
+- **No single point of failure**: Decentralized infrastructure means no one entity controls the truth
 
 ## Vision
 
 The long-term goal of BS Detector goes beyond a hackathon project. As misinformation spreads faster than ever, large platforms and online communities need tools to quickly fact-check posts before they go viral.
 
-**BS Detector is designed to be the infrastructure layer for this**: platforms, newsrooms, Discord communities, or browser extensions could plug directly into the contract and get a decentralized, censorship-resistant fact-check on any post in seconds — without relying on a single company or AI model to decide what's true.
+**BS Detector is designed to be the infrastructure layer for this**: platforms, newsrooms, Discord communities, or browser extensions could plug directly into the contract and get a decentralized, censorship-resistant fact-check on any post in seconds: without relying on a single company or AI model to decide what's true.
 
 Because truth shouldn't be controlled by one entity.
 
@@ -202,10 +202,10 @@ curl http://localhost:8000/api/poll/0xabc123...
 
 The `BullshitDetector` contract (`contracts/bullshit_detector.py`) runs on GenLayer and performs:
 
-1. **Evidence gathering** — Fetches URLs found in the claim (max 2 web requests)
-2. **Multi-angle analysis** — Evidence vs claims, technical feasibility, manipulation detection, author credibility
-3. **Consensus** — Uses `eq_principle.prompt_comparative()` to ensure multiple validators reach the same verdict
-4. **Storage** — Results persisted on-chain in a `TreeMap`
+1. **Evidence gathering**: Fetches URLs found in the claim (max 2 web requests)
+2. **Multi-angle analysis**: Evidence vs claims, technical feasibility, manipulation detection, author credibility
+3. **Consensus**: Uses `eq_principle.prompt_comparative()` to ensure multiple validators reach the same verdict
+4. **Storage**: Results persisted on-chain in a `TreeMap`
 
 ## Tech Stack
 

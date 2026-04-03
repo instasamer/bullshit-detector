@@ -5,6 +5,7 @@ from genlayer import *
 import json
 import typing
 import re
+from urllib.parse import quote_plus
 
 
 class BullshitDetector(gl.Contract):
@@ -60,10 +61,42 @@ class BullshitDetector(gl.Contract):
                 if m:
                     author = m.group(1)
 
+            # 2. DuckDuckGo search for fact-checks and debunks
+            search_evidence = ""
+            search_terms = claim_text[:80]
+            if author:
+                search_query = f"{author} {search_terms} fact check debunk"
+            else:
+                search_query = f"{search_terms} fact check debunk"
+            search_url = f"https://duckduckgo.com/html/?q={quote_plus(search_query)}"
+            try:
+                resp = gl.nondet.web.get(search_url)
+                html = resp.body.decode("utf-8")
+                # Extract result snippets: text between <a class="result__snippet"> tags
+                snippets = re.findall(r'class="result__snippet"[^>]*>(.*?)</a>', html, re.DOTALL)
+                titles = re.findall(r'class="result__a"[^>]*>(.*?)</a>', html, re.DOTALL)
+                if snippets or titles:
+                    combined = []
+                    for t, s in zip(titles[:5], snippets[:5]):
+                        t_clean = re.sub(r'<[^>]+>', '', t).strip()
+                        s_clean = re.sub(r'<[^>]+>', '', s).strip()
+                        if t_clean or s_clean:
+                            combined.append(f"- {t_clean}: {s_clean}")
+                    search_evidence = "\n".join(combined)
+                else:
+                    # Fallback: grab any visible text snippets
+                    plain = re.sub(r'<[^>]+>', ' ', html)
+                    plain = re.sub(r'\s+', ' ', plain).strip()
+                    search_evidence = plain[:2000]
+            except Exception:
+                search_evidence = "[Search unavailable]"
+
             # ===== BUILD EVIDENCE =====
             evidence = ""
             if url_evidence:
                 evidence += f"\nURL EVIDENCE:{url_evidence}"
+            if search_evidence:
+                evidence += f"\n\nSEARCH RESULTS (fact-check/debunk search):\n{search_evidence}"
             if not evidence:
                 evidence = "\n[No web evidence gathered]"
 

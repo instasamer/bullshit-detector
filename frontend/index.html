@@ -817,6 +817,10 @@
             if (!url) return;
             currentUrl = url;
 
+            // If URL matches a hardcoded example, use it directly
+            const exIdx = exampleData.findIndex(e => url.includes(e.url.split('/status/')[1]?.split('?')[0]));
+            if (exIdx !== -1) { loadExampleUrl(exIdx); return; }
+
             resetResult();
             hide('fallback');
             show('stage');

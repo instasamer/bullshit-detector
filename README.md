@@ -2,11 +2,18 @@
 
 > **Decentralized AI fact-checking for social media posts**
 
-Built for the [GenLayer Bradbury Hackathon](https://genlayer.com)
+Built for the [GenLayer Bradbury Hackathon](https://genlayer.com) · Track: **AI Governance**
 
 ![GenLayer](https://img.shields.io/badge/Powered%20by-GenLayer-7b68ee)
 ![Python](https://img.shields.io/badge/Python-3.10+-blue)
 ![License](https://img.shields.io/badge/License-MIT-green)
+
+## 🔴 Live Demo
+
+**[https://bullshit-detector-wv8w.onrender.com](https://bullshit-detector-wv8w.onrender.com)**
+
+Deployed on GenLayer Testnet Bradbury
+Contract: `0x6500d5ED0bCb805cDF35cFfCcAB118C9485AE7A2`
 
 ## What is this?
 
@@ -34,6 +41,14 @@ Tweet URL → Extract content → Submit to GenLayer contract
 - **Evidence-based** — Fetches URLs from claims, checks author credibility, detects manipulation tactics
 - **No single point of failure** — Decentralized infrastructure means no one entity controls the truth
 
+## Vision
+
+The long-term goal of BS Detector goes beyond a hackathon project. As misinformation spreads faster than ever, large platforms and online communities need tools to quickly fact-check posts before they go viral.
+
+**BS Detector is designed to be the infrastructure layer for this**: platforms, newsrooms, Discord communities, or browser extensions could plug directly into the contract and get a decentralized, censorship-resistant fact-check on any post in seconds — without relying on a single company or AI model to decide what's true.
+
+Because truth shouldn't be controlled by one entity.
+
 ## Demo
 
 1. Paste a tweet URL (x.com or twitter.com)
@@ -60,6 +75,7 @@ Tweet URL → Extract content → Submit to GenLayer contract
                    │ REST API
 ┌──────────────────▼──────────────────────────┐
 │              FastAPI Backend                  │
+│         Async job queue + polling            │
 │         In-memory cache (SHA256)             │
 │         GenLayer service wrapper             │
 └──────────────────┬──────────────────────────┘
@@ -137,6 +153,7 @@ docker compose up --build
 |--------|----------|-------------|
 | `POST` | `/api/verify/text` | Verify a claim by text + optional source URL |
 | `POST` | `/api/verify/url` | Fetch URL content and verify |
+| `GET` | `/api/poll/{job_id}` | Poll for verification result (async) |
 | `GET` | `/api/results` | Get all previously verified claims |
 | `GET` | `/api/health` | Health check with contract info |
 
@@ -155,6 +172,19 @@ curl -X POST http://localhost:8000/api/verify/text \
 
 ```json
 {
+  "job_id": "0xabc123...",
+  "status": "pending"
+}
+```
+
+Then poll:
+
+```bash
+curl http://localhost:8000/api/poll/0xabc123...
+```
+
+```json
+{
   "verdict": "BULLSHIT",
   "confidence": 92,
   "reason": "The claim of $100k profit in 2 weeks from an AI trading bot is highly implausible...",
@@ -164,7 +194,7 @@ curl -X POST http://localhost:8000/api/verify/text \
     "Artificial scarcity (only 10 spots)"
   ],
   "evidence_summary": "No verifiable evidence of profits. Classic pump-and-dump pattern.",
-  "cached": false
+  "status": "done"
 }
 ```
 
@@ -181,11 +211,12 @@ The `BullshitDetector` contract (`contracts/bullshit_detector.py`) runs on GenLa
 
 | Component | Technology |
 |-----------|------------|
-| Frontend | Vanilla JS, CSS3 (glassmorphism, aurora effects) |
+| Frontend | Vanilla JS, CSS3 |
 | Backend | FastAPI, Uvicorn, Pydantic |
 | Contract | GenLayer Intelligent Contract (Python) |
 | Chain | GenLayer Testnet Bradbury |
 | SDK | genlayer-py |
+| Deploy | Render (Docker) |
 
 ## License
 

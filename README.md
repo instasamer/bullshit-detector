@@ -13,7 +13,7 @@ Built for the [GenLayer Bradbury Hackathon](https://genlayer.com) · Track: **On
 **[https://bullshit-detector-wv8w.onrender.com](https://bullshit-detector-wv8w.onrender.com)**
 
 Deployed on GenLayer Testnet Bradbury
-Contract: `0xa31C270B3325d1064480039b58e974166A2172a6`
+Contract: `0xFC22A2EAE6988D2b13054A4201E382bc5bF1160A`
 
 ## What is this?
 

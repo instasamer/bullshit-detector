@@ -69,27 +69,32 @@ class BullshitDetector(gl.Contract):
             else:
                 search_query = f"{search_terms} fact check debunk"
             search_url = f"https://duckduckgo.com/html/?q={quote_plus(search_query)}"
-            try:
-                resp = gl.nondet.web.get(search_url)
-                html = resp.body.decode("utf-8")
-                # Extract result snippets: text between <a class="result__snippet"> tags
-                snippets = re.findall(r'class="result__snippet"[^>]*>(.*?)</a>', html, re.DOTALL)
-                titles = re.findall(r'class="result__a"[^>]*>(.*?)</a>', html, re.DOTALL)
-                if snippets or titles:
-                    combined = []
-                    for t, s in zip(titles[:5], snippets[:5]):
-                        t_clean = re.sub(r'<[^>]+>', '', t).strip()
-                        s_clean = re.sub(r'<[^>]+>', '', s).strip()
-                        if t_clean or s_clean:
-                            combined.append(f"- {t_clean}: {s_clean}")
-                    search_evidence = "\n".join(combined)
-                else:
-                    # Fallback: grab any visible text snippets
-                    plain = re.sub(r'<[^>]+>', ' ', html)
-                    plain = re.sub(r'\s+', ' ', plain).strip()
-                    search_evidence = plain[:2000]
-            except Exception:
-                search_evidence = "[Search unavailable]"
+            captcha_signals = ['captcha', 'robot', 'unusual traffic', 'verify you are human', 'blocked']
+            for _attempt in range(3):
+                try:
+                    resp = gl.nondet.web.get(search_url)
+                    html = resp.body.decode("utf-8")
+                    snippets = re.findall(r'class="result__snippet"[^>]*>(.*?)</a>', html, re.DOTALL)
+                    titles = re.findall(r'class="result__a"[^>]*>(.*?)</a>', html, re.DOTALL)
+                    html_lower = html.lower()
+                    is_captcha = any(sig in html_lower for sig in captcha_signals) and not snippets and not titles
+                    if is_captcha:
+                        continue  # retry
+                    if snippets or titles:
+                        combined = []
+                        for t, s in zip(titles[:5], snippets[:5]):
+                            t_clean = re.sub(r'<[^>]+>', '', t).strip()
+                            s_clean = re.sub(r'<[^>]+>', '', s).strip()
+                            if t_clean or s_clean:
+                                combined.append(f"- {t_clean}: {s_clean}")
+                        search_evidence = "\n".join(combined)
+                    else:
+                        plain = re.sub(r'<[^>]+>', ' ', html)
+                        plain = re.sub(r'\s+', ' ', plain).strip()
+                        search_evidence = plain[:2000]
+                    break  # success
+                except Exception:
+                    break
 
             # ===== BUILD EVIDENCE =====
             evidence = ""
@@ -136,6 +141,8 @@ VERDICT:
 - BULLSHIT: False, exaggerated, technically implausible, or deliberately misleading
 - LEGIT: Plausible, supported by evidence, not manipulative
 - INCONCLUSIVE: Mixed or insufficient evidence
+
+IMPORTANT: Never mention search engines, web scrapers, CAPTCHAs, or data retrieval tools in your response. Base your analysis on the post content, technical feasibility, and any web evidence found. If no web evidence was available, analyze based on the claim itself.
 
 Respond with ONLY JSON:
 {{"verdict":"BULLSHIT","confidence":85,"reason":"2-3 sentences with strongest evidence","red_flags":["quote problematic parts"],"evidence_summary":"evidence findings + technical assessment + community signals"}}"""

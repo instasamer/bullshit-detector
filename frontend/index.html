@@ -637,16 +637,11 @@
                 if (!el) continue;
                 el.innerHTML = exampleData[i].html;
             }
-            if (window.twttr?.widgets) window.twttr.widgets.load();
+            window.twttr.widgets.load();
         }
-        if (window.twttr?.widgets) {
-            loadExampleEmbeds();
-        } else {
-            window.addEventListener('load', () => {
-                if (window.twttr?.widgets) window.twttr.widgets.ready(loadExampleEmbeds);
-                else loadExampleEmbeds();
-            });
-        }
+        window.twttr = window.twttr || {};
+        window.twttr._e = window.twttr._e || [];
+        window.twttr._e.push(loadExampleEmbeds);
 
         async function loadFeed() {
             try {

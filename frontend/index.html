@@ -364,15 +364,7 @@
         }
         .ex-card:hover { border-color: var(--border-strong); }
 
-        .ex-card .ex-embed { flex: 1; overflow: hidden; padding: 12px 14px; }
-        .ex-mini-tweet { display: flex; flex-direction: column; gap: 6px; }
-        .ex-mt-header { display: flex; align-items: center; gap: 8px; }
-        .ex-mt-avatar { width: 32px; height: 32px; border-radius: 50%; background: #333; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 700; color: #fff; flex-shrink: 0; }
-        .ex-mt-names { display: flex; flex-direction: column; gap: 1px; }
-        .ex-mt-name { font-size: 0.78rem; font-weight: 700; color: #e7e9ea; line-height: 1; }
-        .ex-mt-handle { font-size: 0.7rem; color: #71767b; line-height: 1; }
-        .ex-mt-text { color: #e0e0e0; font-size: 0.82rem; line-height: 1.45; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
-        .ex-mt-xicon { margin-left: auto; flex-shrink: 0; opacity: 0.4; }
+        .ex-card .ex-embed { flex: 1; overflow: hidden; max-height: 300px; pointer-events: none; }
 
         .ex-card .ex-verdict {
             display: flex; align-items: center; justify-content: center; gap: 6px; padding: 8px;
@@ -638,35 +630,23 @@
             </div>`;
         }
 
-        // Render examples as styled mini-tweets (no iframe = clicks work reliably)
+        // Render Twitter embeds; pointer-events:none on container lets card onclick fire
         function loadExampleEmbeds() {
             for (let i = 0; i < exampleData.length; i++) {
                 const el = document.getElementById(`ex-embed-${i}`);
                 if (!el) continue;
-                const tmp = document.createElement('div');
-                tmp.innerHTML = exampleData[i].html;
-                const bq = tmp.querySelector('blockquote');
-                if (!bq) { el.innerHTML = exampleData[i].html; continue; }
-                const p = bq.querySelector('p');
-                const text = p ? p.textContent.trim() : '';
-                const authorMatch = bq.innerHTML.match(/&mdash;\s*(.+?)\(@(\w+)\)/);
-                const name = authorMatch ? authorMatch[1].trim() : '';
-                const handle = authorMatch ? authorMatch[2] : '';
-                const initial = name ? name[0].toUpperCase() : '?';
-                el.innerHTML = `<div class="ex-mini-tweet">
-                    <div class="ex-mt-header">
-                        <div class="ex-mt-avatar">${initial}</div>
-                        <div class="ex-mt-names">
-                            <div class="ex-mt-name">${name}</div>
-                            <div class="ex-mt-handle">@${handle}</div>
-                        </div>
-                        <div class="ex-mt-xicon"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.748l7.73-8.835L1.254 2.25H8.08l4.253 5.622zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg></div>
-                    </div>
-                    <div class="ex-mt-text">${text}</div>
-                </div>`;
+                el.innerHTML = exampleData[i].html;
             }
+            if (window.twttr?.widgets) window.twttr.widgets.load();
         }
-        loadExampleEmbeds();
+        if (window.twttr?.widgets) {
+            loadExampleEmbeds();
+        } else {
+            window.addEventListener('load', () => {
+                if (window.twttr?.widgets) window.twttr.widgets.ready(loadExampleEmbeds);
+                else loadExampleEmbeds();
+            });
+        }
 
         async function loadFeed() {
             try {

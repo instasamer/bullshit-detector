@@ -367,11 +367,10 @@
         }
         .ex-card:hover { border-color: var(--border-strong); }
 
-        .ex-card .ex-click-overlay { position: absolute; inset: 0; z-index: 999; cursor: pointer; }
-        .ex-card .ex-embed { flex: 1; overflow: hidden; max-height: 300px; pointer-events: none; }
-        .ex-card .ex-embed iframe,
-        .ex-card .ex-embed .twitter-tweet-rendered,
-        .ex-card .ex-embed twitter-widget { width: 100% !important; max-width: 100% !important; min-width: 0 !important; }
+        .ex-card .ex-embed { flex: 1; overflow: hidden; padding: 14px; }
+        .ex-mini-tweet { }
+        .ex-mt-author { font-size: 0.72rem; color: #71767b; margin-bottom: 6px; font-weight: 600; }
+        .ex-mt-text { color: #e0e0e0; font-size: 0.85rem; line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
 
         .ex-card .ex-verdict {
             display: flex; align-items: center; justify-content: center; gap: 6px; padding: 8px;
@@ -572,24 +571,21 @@
         <div class="examples">
             <h3>Try a real post</h3>
             <div class="ex-grid">
-                <div class="ex-card">
-                    <div class="ex-click-overlay" onclick="loadExampleUrl(0)"></div>
+                <div class="ex-card" onclick="loadExampleUrl(0)">
                     <div class="ex-embed" id="ex-embed-0"></div>
                     <div class="ex-verdict BULLSHIT">
                         <div class="ex-icon"><svg viewBox="0 0 80 80"><line x1="18" y1="18" x2="62" y2="62" stroke="#ff3333" stroke-width="10" stroke-linecap="round"/><line x1="62" y1="18" x2="18" y2="62" stroke="#ff3333" stroke-width="10" stroke-linecap="round"/></svg></div>
                         <div class="ex-label">Bullshit</div>
                     </div>
                 </div>
-                <div class="ex-card">
-                    <div class="ex-click-overlay" onclick="loadExampleUrl(1)"></div>
+                <div class="ex-card" onclick="loadExampleUrl(1)">
                     <div class="ex-embed" id="ex-embed-1"></div>
                     <div class="ex-verdict LEGIT">
                         <div class="ex-icon"><svg viewBox="0 0 80 80"><polyline points="14,44 32,60 66,22" stroke="#33ff66" stroke-width="10" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></div>
                         <div class="ex-label">Legit</div>
                     </div>
                 </div>
-                <div class="ex-card">
-                    <div class="ex-click-overlay" onclick="loadExampleUrl(2)"></div>
+                <div class="ex-card" onclick="loadExampleUrl(2)">
                     <div class="ex-embed" id="ex-embed-2"></div>
                     <div class="ex-verdict BULLSHIT">
                         <div class="ex-icon"><svg viewBox="0 0 80 80"><line x1="18" y1="18" x2="62" y2="62" stroke="#ff3333" stroke-width="10" stroke-linecap="round"/><line x1="62" y1="18" x2="18" y2="62" stroke="#ff3333" stroke-width="10" stroke-linecap="round"/></svg></div>
@@ -640,44 +636,23 @@
             </div>`;
         }
 
-        // Render example tweet widgets with fallback
+        // Render examples as styled mini-tweets (no iframe = clicks work reliably)
         function loadExampleEmbeds() {
             for (let i = 0; i < exampleData.length; i++) {
                 const el = document.getElementById(`ex-embed-${i}`);
-                if (el) {
-                    el.innerHTML = exampleData[i].html;
-                    if (window.twttr?.widgets) {
-                        window.twttr.widgets.load(el).then(() => {
-                            // Check if widget actually rendered
-                            setTimeout(() => {
-                                if (!el.querySelector('iframe') && !el.querySelector('twitter-widget')) {
-                                    el.innerHTML = buildFallbackCard(exampleData[i].html);
-                                }
-                            }, 3000);
-                        });
-                    } else {
-                        el.innerHTML = buildFallbackCard(exampleData[i].html);
-                    }
-                }
+                if (!el) continue;
+                const tmp = document.createElement('div');
+                tmp.innerHTML = exampleData[i].html;
+                const bq = tmp.querySelector('blockquote');
+                if (!bq) { el.innerHTML = exampleData[i].html; continue; }
+                const p = bq.querySelector('p');
+                const text = p ? p.textContent.trim() : '';
+                const authorMatch = bq.innerHTML.match(/&mdash;\s*(.+?)\s*<a /);
+                const author = authorMatch ? authorMatch[1].replace(/&amp;/g, '&') : '';
+                el.innerHTML = `<div class="ex-mini-tweet"><div class="ex-mt-author">${author}</div><div class="ex-mt-text">${text}</div></div>`;
             }
         }
-
-        // Wait for widgets.js to be ready, but don't wait forever
-        function initExamples() {
-            if (window.twttr?.widgets) {
-                loadExampleEmbeds();
-            } else {
-                // Try a few times, then load with fallback
-                if (!initExamples._tries) initExamples._tries = 0;
-                initExamples._tries++;
-                if (initExamples._tries > 6) {
-                    loadExampleEmbeds(); // will use fallback
-                } else {
-                    setTimeout(initExamples, 500);
-                }
-            }
-        }
-        setTimeout(initExamples, 300);
+        loadExampleEmbeds();
 
         async function loadFeed() {
             try {

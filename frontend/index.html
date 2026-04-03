@@ -336,10 +336,7 @@
         .error.active { display: block; }
 
         /* ===== FEED ===== */
-        .feed { margin-top: 40px; padding-top: 24px; border-top: 1px solid var(--border); }
-        .feed h3 { font-family: var(--mono); font-size: 0.6rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 3px; margin-bottom: 16px; font-weight: 400; }
-        .feed-empty { font-family: var(--mono); font-size: 0.65rem; color: var(--text-dim); letter-spacing: 0.5px; }
-        .feed-list { display: flex; flex-direction: column; gap: 4px; }
+        .feed { display: none; }
         .feed-item {
             display: flex; align-items: center; gap: 12px;
             padding: 10px 14px; background: var(--surface);
@@ -1050,7 +1047,6 @@
 
             show('reasoning'); show('seal');
             document.getElementById('verdict-bar').scrollIntoView({ behavior: 'smooth', block: 'center' });
-            loadFeed();
         }
 
         function scrollToReasoning() {

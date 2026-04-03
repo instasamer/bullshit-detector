@@ -2,7 +2,7 @@
 
 > **Decentralized AI fact-checking for social media posts**
 
-Built for the [GenLayer Bradbury Hackathon](https://genlayer.com) · Track: **AI Governance**
+Built for the [GenLayer Bradbury Hackathon](https://genlayer.com) · Track: **Onchain Justice**
 
 ![GenLayer](https://img.shields.io/badge/Powered%20by-GenLayer-7b68ee)
 ![Python](https://img.shields.io/badge/Python-3.10+-blue)

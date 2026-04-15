@@ -384,9 +384,86 @@
             .url-row { flex-direction: column; }
             .ex-grid { grid-template-columns: 1fr; }
         }
+
+        /* ===== BACKGROUND FEED ===== */
+        #bg-feed {
+            position: fixed;
+            inset: 0;
+            z-index: 0;
+            overflow: hidden;
+            pointer-events: none;
+            display: flex;
+            gap: 12px;
+            padding: 0 12px;
+        }
+
+        .bg-col {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            will-change: transform;
+        }
+        .bg-col:nth-child(1) { animation: bgScrollUp 60s linear infinite; }
+        .bg-col:nth-child(2) { animation: bgScrollUp 75s linear infinite; animation-delay: -25s; }
+        .bg-col:nth-child(3) { animation: bgScrollUp 55s linear infinite; animation-delay: -10s; }
+        .bg-col:nth-child(4) { animation: bgScrollUp 80s linear infinite; animation-delay: -40s; }
+
+        @keyframes bgScrollUp {
+            0%   { transform: translateY(0); }
+            100% { transform: translateY(-50%); }
+        }
+
+        .bg-tweet {
+            background: rgba(13,13,13,0.6);
+            border: 1px solid rgba(255,255,255,0.05);
+            border-radius: 4px;
+            padding: 12px 14px;
+            opacity: 0.08;
+            flex-shrink: 0;
+        }
+        .bg-tweet-header {
+            display: flex;
+            align-items: baseline;
+            gap: 6px;
+            margin-bottom: 7px;
+        }
+        .bg-tweet-author {
+            font-family: var(--sans);
+            font-size: 0.72rem;
+            font-weight: 600;
+            color: #fff;
+        }
+        .bg-tweet-handle {
+            font-family: var(--mono);
+            font-size: 0.6rem;
+            color: #555;
+        }
+        .bg-tweet-text {
+            font-family: var(--sans);
+            font-size: 0.75rem;
+            color: #999;
+            line-height: 1.55;
+        }
+        .bg-tweet-verdict {
+            margin-top: 9px;
+            font-family: var(--mono);
+            font-size: 0.5rem;
+            letter-spacing: 2px;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+        .bg-tweet-verdict.BULLSHIT { color: var(--red); }
+        .bg-tweet-verdict.LEGIT    { color: var(--green); }
+        .bg-tweet-verdict.INCONCLUSIVE { color: var(--amber); }
+
+        /* content above bg */
+        .container { position: relative; z-index: 1; }
     </style>
 </head>
 <body>
+    <!-- Animated background feed -->
+    <div id="bg-feed"></div>
     <div class="noise"></div>
     <div class="container">
         <!-- Header -->
@@ -656,6 +733,56 @@
         }
 
         buildExampleGrid();
+
+        // ===== BACKGROUND FEED =====
+        (function buildBgFeed() {
+            const feed = document.getElementById('bg-feed');
+            if (!feed) return;
+
+            // Source tweets for background (text extracted from exampleData)
+            const bgTweets = exampleData.map(ex => {
+                const d = document.createElement('div');
+                d.innerHTML = ex.html;
+                const bq = d.querySelector('blockquote');
+                const text = bq
+                    ? Array.from(bq.querySelectorAll('p')).map(p => p.textContent.trim()).join(' ')
+                    : '';
+                const authorMatch = ex.html.match(/&mdash;\s*(.*?)\s*\(<a/);
+                const author = authorMatch ? authorMatch[1].trim() : '';
+                const handleMatch = ex.html.match(/@(\w+)\)/);
+                const handle = handleMatch ? '@' + handleMatch[1] : '';
+                return { author, handle, text: text.slice(0, 180), verdict: ex.verdict.verdict };
+            });
+
+            const NUM_COLS = 4;
+            for (let c = 0; c < NUM_COLS; c++) {
+                const col = document.createElement('div');
+                col.className = 'bg-col';
+
+                // Pick a shifted subset per column so columns look different
+                const offset = Math.floor((c * bgTweets.length) / NUM_COLS);
+                const pool = [...bgTweets.slice(offset), ...bgTweets.slice(0, offset)];
+
+                // Duplicate for seamless infinite scroll (need content >= 100vh)
+                const repeated = [...pool, ...pool, ...pool, ...pool];
+
+                repeated.forEach(t => {
+                    const el = document.createElement('div');
+                    el.className = 'bg-tweet';
+                    el.innerHTML = `
+                        <div class="bg-tweet-header">
+                            <span class="bg-tweet-author">${t.author}</span>
+                            <span class="bg-tweet-handle">${t.handle}</span>
+                        </div>
+                        <div class="bg-tweet-text">${t.text}</div>
+                        <div class="bg-tweet-verdict ${t.verdict}">${t.verdict}</div>
+                    `;
+                    col.appendChild(el);
+                });
+
+                feed.appendChild(col);
+            }
+        })();
 
         // Init embeds: try immediately, then wait for widgets.js
         if (window.twttr && window.twttr.widgets) {

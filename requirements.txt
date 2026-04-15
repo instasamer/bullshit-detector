@@ -3,3 +3,5 @@ uvicorn==0.30.0
 genlayer-py==0.12.1
 pydantic>=2.0.0
 python-dotenv>=1.0.0
+tweepy>=4.14.0
+requests>=2.31.0

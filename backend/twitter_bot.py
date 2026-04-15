@@ -16,7 +16,7 @@ logger = logging.getLogger("bs-bot")
 
 # ── Config ────────────────────────────────────────────────────────────────────
 SORSA_API_KEY        = os.getenv("SORSA_API_KEY", "")
-SORSA_BASE           = "https://api.sorsa.io"
+SORSA_BASE           = "https://api.sorsa.io/v3"
 
 TWITTER_API_KEY      = os.getenv("TWITTER_API_KEY", "")
 TWITTER_API_SECRET   = os.getenv("TWITTER_API_SECRET", "")
@@ -45,12 +45,12 @@ def save_processed(ids: set):
 
 
 # ── Sorsa (read) ──────────────────────────────────────────────────────────────
-def _sorsa(path: str, params: dict = None) -> dict:
-    """GET request to Sorsa API. Adjust auth header if needed per your plan."""
-    r = requests.get(
+def _sorsa(path: str, body: dict = None) -> dict:
+    """POST request to Sorsa API."""
+    r = requests.post(
         f"{SORSA_BASE}{path}",
-        params=params,
-        headers={"X-API-Key": SORSA_API_KEY},
+        json=body or {},
+        headers={"ApiKey": SORSA_API_KEY, "Content-Type": "application/json"},
         timeout=15,
     )
     r.raise_for_status()
@@ -58,16 +58,14 @@ def _sorsa(path: str, params: dict = None) -> dict:
 
 
 def get_mentions() -> list:
-    """Search for recent tweets mentioning @BOT_HANDLE."""
-    # Sorsa uses standard Twitter search operators
-    data = _sorsa("/search/tweets", {"query": f"@{BOT_HANDLE}", "count": 20})
+    """Search for recent tweets mentioning @BOT_HANDLE via Sorsa search."""
+    data = _sorsa("/search", {"query": f"@{BOT_HANDLE}", "count": 20})
     return data.get("tweets", [])
 
 
 def get_tweet_likes(tweet_id: str) -> int:
     """Return like count for a tweet via Sorsa."""
-    data = _sorsa(f"/tweets/{tweet_id}")
-    # Sorsa may return favorite_count (v1-style) or public_metrics (v2-style)
+    data = _sorsa("/tweet-by-id", {"tweet_id": tweet_id})
     return (
         data.get("favorite_count")
         or data.get("public_metrics", {}).get("like_count", 0)
